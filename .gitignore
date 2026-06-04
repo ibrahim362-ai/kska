@@ -1,0 +1,83 @@
+# ---------- OS ----------
+.DS_Store
+Thumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# ---------- Editors ----------
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.idea/
+*.iml
+*.swp
+*.swo
+
+# ---------- Env & Secrets ----------
+.env
+.env.local
+.env.*.local
+.env.production
+*.pem
+*.key
+*.p12
+secrets/
+
+# ---------- Logs ----------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# ---------- Runtime / Build ----------
+node_modules/
+dist/
+build/
+out/
+*.tsbuildinfo
+.cache/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+build/
+*.lock.bak
+
+# ---------- Coverage / Test artifacts ----------
+coverage/
+*.lcov
+.nyc_output/
+junit.xml
+test-results/
+playwright-report/
+playwright/.cache/
+k6-report/
+loadtest/results/
+
+# ---------- Database (dev) ----------
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+postgres-data/
+redis-data/
+
+# ---------- Uploads (dev) ----------
+uploads/*
+!uploads/.gitkeep
+
+# ---------- Docker ----------
+.docker/
+docker-compose.override.yml
+
+# ---------- Misc ----------
+*.tmp
+*.bak
+*.orig
+*.rej
+.history/

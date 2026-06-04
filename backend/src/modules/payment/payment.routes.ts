@@ -1,0 +1,24 @@
+import { Router } from 'express';
+import * as paymentController from './payment.controller';
+import { authenticate } from '../../middleware/auth';
+import { authorize } from '../../middleware/role';
+
+const router = Router();
+
+router.post('/chapa/callback', paymentController.chapaCallback);
+router.post('/telebirr/callback', paymentController.telebirrCallback);
+
+router.use(authenticate);
+
+router.post('/', paymentController.createPayment);
+router.put('/:id/confirm', authorize('ADMIN'), paymentController.confirmPayment);
+router.get('/', authorize('ADMIN'), paymentController.getPayments);
+router.get('/my-payments', paymentController.getUserPayments);
+
+router.post('/chapa/initialize', paymentController.chapaInitialize);
+router.get('/chapa/verify/:txRef', paymentController.chapaVerify);
+
+router.post('/telebirr/initialize', paymentController.telebirrInitialize);
+router.get('/telebirr/query/:txId', paymentController.telebirrQuery);
+
+export default router;

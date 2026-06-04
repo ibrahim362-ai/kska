@@ -1,0 +1,119 @@
+{
+  "@@locale": "en",
+  "appTitle": "Community Hub",
+  "@appTitle": { "description": "Application name" },
+
+  "navHome": "Home",
+  "navVotes": "Votes",
+  "navTickets": "Tickets",
+  "navLeaderboard": "Ranks",
+  "navProfile": "Profile",
+
+  "authLogin": "Sign In",
+  "authSignup": "Sign Up",
+  "authLogout": "Logout",
+  "authEmail": "Email",
+  "authPassword": "Password",
+  "authConfirmPassword": "Confirm Password",
+  "authFullName": "Full Name",
+  "authUsername": "Username",
+  "authPhone": "Phone",
+  "authForgotPassword": "Forgot Password?",
+  "authResetPassword": "Reset Password",
+  "authOr": "or",
+  "authContinueWithGoogle": "Continue with Google",
+  "authNoAccount": "Don't have an account?",
+  "authHaveAccount": "Already have an account?",
+  "authVerificationCode": "Verification Code",
+
+  "profileEdit": "Edit Profile",
+  "profileSettings": "Settings",
+  "profileLanguage": "Language",
+  "profileNotifications": "Notifications",
+  "profileMembership": "Membership Plans",
+  "profileHelp": "Help & Support",
+  "profileAbout": "About",
+
+  "homeFeed": "Feed",
+  "homeCreatePost": "Create Post",
+  "homeTrending": "Trending",
+  "homeLatest": "Latest",
+  "homeNoPosts": "No posts yet. Be the first!",
+  "homePullToRefresh": "Pull to refresh",
+
+  "postLike": "Like",
+  "postComment": "Comment",
+  "postShare": "Share",
+  "postSave": "Save",
+  "postReport": "Report",
+  "postLikes": "{count, plural, =0{No likes} =1{1 like} other{{count} likes}}",
+  "@postLikes": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "postCommentsCount": "{count, plural, =0{No comments} =1{1 comment} other{{count} comments}}",
+  "@postCommentsCount": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+
+  "voteNow": "Vote Now",
+  "voteEnded": "Ended",
+  "voteLive": "Live",
+  "voteUpcoming": "Upcoming",
+  "voteTotalVotes": "{count} votes",
+  "@voteTotalVotes": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "voteAlreadyVoted": "You have already voted",
+  "voteConfirmTitle": "Confirm Vote",
+  "voteConfirmMessage": "Are you sure you want to vote for \"{option}\"?",
+  "@voteConfirmMessage": {
+    "placeholders": { "option": { "type": "String" } }
+  },
+
+  "ticketBuyNow": "Buy Ticket",
+  "ticketFree": "Free",
+  "ticketEventDate": "Event Date",
+  "ticketLocation": "Location",
+  "ticketQuantityLeft": "{count} left",
+  "@ticketQuantityLeft": {
+    "placeholders": { "count": { "type": "int" } }
+  },
+  "ticketSoldOut": "Sold Out",
+  "ticketMyTickets": "My Tickets",
+  "ticketConfirmed": "Confirmed",
+
+  "payManual": "Pay Manually",
+  "payBankInfo": "Bank Account Information",
+  "payUploadReceipt": "Upload Receipt",
+  "paySenderName": "Sender Name",
+  "payTransactionRef": "Transaction Reference",
+  "paySubmitReceipt": "Submit Receipt",
+  "paySubmitted": "Receipt submitted! Awaiting admin review.",
+  "payProcessingTime": "Review takes up to 24 hours.",
+
+  "errorGeneric": "Something went wrong. Please try again.",
+  "errorNetwork": "No internet connection",
+  "errorInvalidCredentials": "Invalid email or password",
+  "errorEmailExists": "Email already registered",
+  "errorUsernameExists": "Username already taken",
+  "errorPasswordMismatch": "Passwords do not match",
+  "errorPasswordTooShort": "Password must be at least 8 characters",
+
+  "successSaved": "Saved successfully",
+  "successUpdated": "Updated successfully",
+  "successDeleted": "Deleted successfully",
+
+  "commonLoading": "Loading...",
+  "commonRetry": "Retry",
+  "commonCancel": "Cancel",
+  "commonConfirm": "Confirm",
+  "commonSave": "Save",
+  "commonDelete": "Delete",
+  "commonEdit": "Edit",
+  "commonSubmit": "Submit",
+  "commonBack": "Back",
+  "commonNext": "Next",
+  "commonDone": "Done",
+  "commonYes": "Yes",
+  "commonNo": "No"
+}
