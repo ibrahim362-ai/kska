@@ -94,7 +94,7 @@ export default function LoginPage() {
           <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-2xl mb-4 transform hover:scale-110 transition-transform duration-300">
             <LogIn size={36} className="text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">Community Hub</h1>
+          <h1 className="text-4xl font-bold text-white mb-2 tracking-tight">KSKA</h1>
           <p className="text-indigo-200 text-lg">Admin Dashboard</p>
         </div>
 

@@ -5,7 +5,9 @@ import { NotFoundError, BadRequestError } from '../../utils/errors';
 export async function createPlan(data: {
   name: string;
   planType: string;
+  level: number;
   price: number;
+  pointsReward: number;
   duration: number;
   badgeIcon?: string;
   extraVotes: number;
@@ -49,6 +51,32 @@ export async function purchaseMembership(userId: string, data: { membershipId: s
     include: { membership: true },
   });
 
+  // Award points for paid memberships
+  if (plan.price > 0 && plan.pointsReward > 0) {
+    try {
+      await prisma.user.update({
+        where: { id: userId },
+        data: { icons: { increment: plan.pointsReward } },
+      });
+
+      await prisma.iconTransaction.create({
+        data: {
+          userId,
+          amount: plan.pointsReward,
+          type: 'MEMBERSHIP_PURCHASE',
+          description: `Purchased ${plan.name} membership - reward ${plan.pointsReward} points`,
+          metadata: JSON.stringify({ 
+            membershipId: plan.id,
+            membershipName: plan.name,
+            price: plan.price,
+          }),
+        },
+      });
+    } catch (error) {
+      console.error('Failed to award membership points:', error);
+    }
+  }
+
   if (plan.price > 0) {
     const reference = `MEM-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
     await prisma.payment.create({
@@ -75,16 +103,70 @@ export async function getUserMemberships(userId: string) {
   });
 }
 
-export async function getAllUserMemberships(query: { page: number; limit: number }) {
-  const total = await prisma.userMembership.count();
-  const data = await prisma.userMembership.findMany({
-    skip: (query.page - 1) * query.limit,
-    take: query.limit,
-    orderBy: { createdAt: 'desc' },
-    include: {
-      user: { select: { id: true, fullName: true, email: true } },
-      membership: true,
+export async function getAllUserMemberships(query: { 
+  page?: number; 
+  limit?: number; 
+  planType?: string;
+  status?: string;
+}) {
+  const page = Number(query.page) || 1;
+  const limit = Number(query.limit) || 20;
+  
+  // Build where clause based on filters
+  const where: any = {};
+  
+  // Filter by plan type
+  if (query.planType && query.planType !== 'ALL') {
+    where.membership = {
+      planType: query.planType,
+    };
+  }
+  
+  // Filter by status
+  if (query.status && query.status !== 'ALL') {
+    if (query.status === 'ACTIVE') {
+      where.isActive = true;
+      where.expiresAt = { gt: new Date() };
+    } else if (query.status === 'EXPIRED') {
+      where.OR = [
+        { isActive: false },
+        { expiresAt: { lte: new Date() } },
+      ];
+    }
+  }
+  
+  const [total, userMemberships] = await Promise.all([
+    prisma.userMembership.count({ where }),
+    prisma.userMembership.findMany({
+      where,
+      skip: (page - 1) * limit,
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+      include: {
+        user: { 
+          select: { 
+            id: true, 
+            fullName: true, 
+            username: true,
+            email: true,
+            avatar: true,
+            icons: true,
+          } 
+        },
+        membership: true,
+      },
+    }),
+  ]);
+  
+  return { 
+    data: {
+      userMemberships,
+      pagination: { 
+        page, 
+        limit, 
+        total, 
+        totalPages: Math.ceil(total / limit) 
+      },
     },
-  });
-  return { data, meta: { page: query.page, limit: query.limit, total, totalPages: Math.ceil(total / query.limit) } };
+  };
 }

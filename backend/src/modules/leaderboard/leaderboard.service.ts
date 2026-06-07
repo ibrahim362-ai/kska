@@ -2,84 +2,89 @@ import prisma from '../../config/prisma';
 import { emitLeaderboardUpdate } from '../../socket/socket';
 
 export async function getLeaderboard(query: { category?: any; period?: any; limit?: any }) {
-  const period = String(query.period || 'WEEKLY');
-  const category = String(query.category || 'GENERAL');
   const limit = Number(query.limit) || 50;
 
-  const entries = await prisma.leaderboardEntry.findMany({
-    where: { category, period },
-    orderBy: { score: 'desc' },
-    take: limit,
-    include: {
-      user: {
-        select: { id: true, email: true, username: true, fullName: true, avatar: true, role: true },
+  // Get users sorted by icons (descending)
+  const users = await prisma.user.findMany({
+    where: {
+      role: 'USER', // Only regular users
+      isBanned: false,
+    },
+    select: {
+      id: true,
+      email: true,
+      username: true,
+      fullName: true,
+      avatar: true,
+      role: true,
+      icons: true,
+      userMemberships: {
+        where: {
+          isActive: true,
+          expiresAt: { gt: new Date() },
+        },
+        include: {
+          membership: true,
+        },
+        orderBy: {
+          membership: {
+            level: 'desc', // Get highest level membership
+          },
+        },
+        take: 1,
       },
+    },
+    orderBy: {
+      icons: 'desc',
     },
   });
 
-  return entries.map((entry, index) => ({
+  // Filter out FREE users (level 0) and apply leaderboard boost
+  const filteredUsers = users
+    .filter((user) => {
+      const activeMembership = user.userMemberships[0];
+      // Only show users with paid memberships (level > 0)
+      return activeMembership && activeMembership.membership.level > 0;
+    })
+    .map((user) => {
+      const activeMembership = user.userMemberships[0];
+      const boost = activeMembership?.membership.leaderboardBoost || 1.0;
+      
+      return {
+        user,
+        // Apply leaderboard boost to score
+        boostedScore: Math.floor(user.icons * boost),
+      };
+    })
+    .sort((a, b) => b.boostedScore - a.boostedScore) // Re-sort by boosted score
+    .slice(0, limit);
+
+  // Add rank to each user
+  return filteredUsers.map((item, index) => ({
     rank: index + 1,
-    score: entry.score,
-    user: entry.user,
+    score: item.boostedScore, // Use boosted score
+    user: {
+      id: item.user.id,
+      email: item.user.email,
+      username: item.user.username,
+      fullName: item.user.fullName,
+      avatar: item.user.avatar,
+      role: item.user.role,
+    },
   }));
 }
 
 export async function recalculateLeaderboard() {
-  const users = await prisma.user.findMany({
-    select: {
-      id: true,
-      _count: { select: { posts: true, likes: true, comments: true, voteRecords: true } },
-    },
-  });
-
-  const periods = ['DAILY', 'WEEKLY', 'MONTHLY', 'ALL_TIME'];
-
-  for (const user of users) {
-    const userMembership = await prisma.userMembership.findFirst({
-      where: {
-        userId: user.id,
-        isActive: true,
-        expiresAt: { gt: new Date() },
-      },
-      include: { membership: true },
-    });
-
-    const boost = userMembership?.membership?.leaderboardBoost || 1.0;
-
-    const baseScore =
-      user._count.posts * 10 +
-      user._count.likes * 2 +
-      user._count.comments * 3 +
-      user._count.voteRecords * 5;
-
-    const score = Math.round(baseScore * boost);
-
-    for (const period of periods) {
-      await prisma.leaderboardEntry.upsert({
-        where: {
-          id: `${user.id}-${period}-GENERAL`,
-          userId: user.id,
-          category: 'GENERAL',
-          period: period,
-        },
-        create: {
-          userId: user.id,
-          score,
-          category: 'GENERAL',
-          period,
-        },
-        update: { score },
-      });
-    }
-  }
-
-  const leaderboard = await getLeaderboard({ category: 'GENERAL', period: 'WEEKLY' });
+  // Icons-based leaderboard doesn't need recalculation
+  // Icons are updated in real-time when users earn them
+  const leaderboard = await getLeaderboard({ limit: 50 });
 
   emitLeaderboardUpdate({
     category: 'GENERAL',
-    period: 'WEEKLY',
+    period: 'ALL_TIME',
     entries: leaderboard,
   });
 
   return leaderboard;
 }
+

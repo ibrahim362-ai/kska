@@ -86,21 +86,30 @@ router.get('/proofs/my', authenticate, manualPaymentController.listMyProofs);
  * @openapi
  * /api/manual-payments/proofs:
  *   get:
- *     tags: [Payments]
- *     summary: Admin: list all manual payment proofs
- *     security: [{ bearerAuth: [] }]
+ *     tags:
+ *       - Payments
+ *     summary: Admin list all manual payment proofs
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: query
  *         name: status
- *         schema: { type: string, enum: [PENDING, APPROVED, REJECTED] }
+ *         schema:
+ *           type: string
+ *           enum: [PENDING, APPROVED, REJECTED]
  *       - in: query
  *         name: page
- *         schema: { type: integer, default: 1 }
+ *         schema:
+ *           type: integer
+ *           default: 1
  *       - in: query
  *         name: limit
- *         schema: { type: integer, default: 20 }
+ *         schema:
+ *           type: integer
+ *           default: 20
  *     responses:
- *       200: { description: Paginated list of proofs }
+ *       200:
+ *         description: Paginated list of proofs
  */
 router.get(
   '/proofs',
@@ -121,28 +130,38 @@ router.get(
  * @openapi
  * /api/manual-payments/proofs/{proofId}/review:
  *   put:
- *     tags: [Payments]
- *     summary: Admin: approve or reject a payment proof
- *     security: [{ bearerAuth: [] }]
+ *     tags:
+ *       - Payments
+ *     summary: Admin approve or reject a payment proof
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: proofId
  *         required: true
- *         schema: { type: string }
+ *         schema:
+ *           type: string
  *     requestBody:
  *       required: true
  *       content:
  *         application/json:
  *           schema:
  *             type: object
- *             required: [decision]
+ *             required:
+ *               - decision
  *             properties:
- *               decision: { type: string, enum: [APPROVED, REJECTED] }
- *               rejectionReason: { type: string }
+ *               decision:
+ *                 type: string
+ *                 enum: [APPROVED, REJECTED]
+ *               rejectionReason:
+ *                 type: string
  *     responses:
- *       200: { description: Proof reviewed }
- *       400: { description: Validation error or proof already reviewed }
- *       404: { description: Proof not found }
+ *       200:
+ *         description: Proof reviewed
+ *       400:
+ *         description: Validation error or proof already reviewed
+ *       404:
+ *         description: Proof not found
  */
 router.put(
   '/proofs/:proofId/review',

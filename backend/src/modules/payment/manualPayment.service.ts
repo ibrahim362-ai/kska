@@ -1,6 +1,8 @@
 import prisma from '../../config/prisma';
 import { BadRequestError, NotFoundError, ForbiddenError } from '../../utils/errors';
 import { logger } from '../../utils/logger';
+import { IconService } from '../../services/icon.service';
+import QRCode from 'qrcode';
 
 export interface ManualPaymentMetadata {
   type: 'MEMBERSHIP' | 'TICKET' | 'OTHER';
@@ -175,35 +177,58 @@ async function activateTarget(tx: any, payment: any) {
         message: `Your ${membership.name} membership is now active.`,
       },
     });
-  } else if (metadata.type === 'TICKET' && metadata.targetId) {
-    const ticket = await tx.ticket.findUnique({ where: { id: metadata.targetId } });
-    if (!ticket) return;
-
-    // Create TicketPurchase
-    const purchase = await tx.ticketPurchase.create({
-      data: {
-        ticketId: ticket.id,
-        userId: payment.userId,
-        status: 'CONFIRMED',
-        paidAmount: payment.amount,
-        paymentId: payment.id,
-      },
+  } else if (metadata.type === 'TICKET' && payment.ticketPurchaseId) {
+    // Update existing ticket purchase to PAID
+    const purchase = await tx.ticketPurchase.findUnique({
+      where: { id: payment.ticketPurchaseId },
+      include: { ticket: true },
     });
+    
+    if (purchase) {
+      const qrData = await QRCode.toDataURL(`purchase:${purchase.id}`);
+      await tx.ticketPurchase.update({
+        where: { id: purchase.id },
+        data: { 
+          status: 'PAID',
+          qrCode: qrData,
+        },
+      });
 
-    // Increment sold count
-    await tx.ticket.update({
-      where: { id: ticket.id },
-      data: { soldCount: { increment: 1 } },
-    });
+      // Increment sold count
+      await tx.ticket.update({
+        where: { id: purchase.ticketId },
+        data: { soldCount: { increment: 1 } },
+      });
 
-    await tx.notification.create({
-      data: {
-        userId: payment.userId,
-        type: 'TICKET_PURCHASED',
-        title: 'Ticket Confirmed',
-        message: `Your ticket for "${ticket.title}" is confirmed.`,
-      },
-    });
+      // Award referrer if this purchase used a referral code
+      if (purchase.referredBy) {
+        try {
+          await IconService.awardIcons(
+            purchase.referredBy,
+            10,
+            'REFERRAL',
+            'Someone used your referral code',
+            { 
+              referredUserId: purchase.userId,
+              ticketId: purchase.ticketId,
+              purchaseId: purchase.id,
+              referralCode: purchase.referralCode 
+            }
+          );
+        } catch (error) {
+          console.error('Failed to award referral icons:', error);
+        }
+      }
+
+      await tx.notification.create({
+        data: {
+          userId: payment.userId,
+          type: 'TICKET_PURCHASED',
+          title: 'Ticket Confirmed',
+          message: `Your ticket for "${purchase.ticket.title}" is confirmed.`,
+        },
+      });
+    }
   }
 }
 

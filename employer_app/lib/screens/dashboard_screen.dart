@@ -248,11 +248,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
             const SizedBox(width: 16),
             StatCard(
-              label: 'Revenue',
+              label: 'Revenue (ETB)',
               value: _revenue.toInt(),
               icon: Icons.attach_money,
               gradient: AppTheme.warningGradient,
-              prefix: 'ETB ',
             ),
           ],
         ),

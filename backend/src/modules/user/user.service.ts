@@ -206,3 +206,77 @@ export async function unregisterFcmToken(userId: string, token: string) {
   });
   return { success: true };
 }
+
+/**
+ * Admin: Manually add points to a user
+ */
+export async function addPointsToUser(data: {
+  userId: string;
+  amount: number;
+  reason: string;
+  adminId: string;
+}) {
+  const user = await prisma.user.findUnique({ where: { id: data.userId } });
+  if (!user) throw new NotFoundError('User not found');
+
+  if (data.amount <= 0) {
+    throw new BadRequestError('Amount must be greater than 0');
+  }
+
+  // Update user icons and create transaction
+  const [updatedUser, transaction] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: data.userId },
+      data: { icons: { increment: data.amount } },
+      select: {
+        id: true,
+        username: true,
+        fullName: true,
+        email: true,
+        icons: true,
+      },
+    }),
+    prisma.iconTransaction.create({
+      data: {
+        userId: data.userId,
+        amount: data.amount,
+        type: 'ADMIN_BONUS',
+        description: data.reason,
+        metadata: JSON.stringify({ 
+          adminId: data.adminId,
+          timestamp: new Date().toISOString()
+        }),
+      },
+    }),
+  ]);
+
+  return {
+    user: updatedUser,
+    transaction,
+  };
+}
+
+/**
+ * Get user's icon transactions history
+ */
+export async function getUserTransactions(userId: string, limit: number = 100) {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new NotFoundError('User not found');
+
+  const transactions = await prisma.iconTransaction.findMany({
+    where: { userId },
+    take: limit,
+    orderBy: { createdAt: 'desc' },
+    select: {
+      id: true,
+      userId: true,
+      amount: true,
+      type: true,
+      description: true,
+      metadata: true,
+      createdAt: true,
+    },
+  });
+
+  return transactions;
+}

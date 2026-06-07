@@ -5,7 +5,11 @@ export const signupSchema = z.object({
   username: z.string().min(3, 'Username must be at least 3 characters').max(30),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   fullName: z.string().min(2, 'Full name is required'),
-  phone: z.string().optional(),
+  phone: z.string().min(1, 'Phone number is required'),
+  age: z.number().int().min(13, 'Must be at least 13 years old').max(120).optional(),
+  gender: z.enum(['MALE', 'FEMALE', 'OTHER']).optional(),
+  city: z.string().min(1, 'City is required'),
+  country: z.string().min(1, 'Country is required'),
   code: z.string().optional(),
 });
 

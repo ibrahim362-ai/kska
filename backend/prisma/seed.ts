@@ -27,11 +27,16 @@ async function main() {
   });
 
   const admin = await prisma.user.upsert({
-    where: { email: 'admin@community.com' },
-    update: {},
+    where: { email: 'admin@kska.com' },
+    update: {
+      password: adminPassword,
+      username: 'kskaadmin',
+      role: 'ADMIN',
+      isVerified: true,
+    },
     create: {
-      email: 'admin@community.com',
-      username: 'admin',
+      email: 'admin@kska.com',
+      username: 'kskaadmin',
       password: adminPassword,
       fullName: 'Admin User',
       role: 'ADMIN',
@@ -40,16 +45,16 @@ async function main() {
   });
 
   const employer = await prisma.user.upsert({
-    where: { email: 'employer@community.com' },
+    where: { email: 'employer@kska.com' },
     update: {
       password: employerPassword,
-      username: 'employer',
+      username: 'kskaemployer',
       role: 'EMPLOYER',
       isVerified: true,
     },
     create: {
-      email: 'employer@community.com',
-      username: 'employer',
+      email: 'employer@kska.com',
+      username: 'kskaemployer',
       password: employerPassword,
       fullName: 'Employer User',
       role: 'EMPLOYER',
@@ -58,16 +63,16 @@ async function main() {
   });
 
   const user1 = await prisma.user.upsert({
-    where: { email: 'user@community.com' },
+    where: { email: 'user@kska.com' },
     update: {
       password: userPassword,
-      username: 'user',
+      username: 'kskauser',
       role: 'USER',
       isVerified: true,
     },
     create: {
-      email: 'user@community.com',
-      username: 'user',
+      email: 'user@kska.com',
+      username: 'kskauser',
       password: userPassword,
       fullName: 'Regular User',
       role: 'USER',
@@ -80,58 +85,157 @@ async function main() {
   const memberships = await Promise.all([
     prisma.membership.upsert({
       where: { name: 'FREE' },
-      update: {},
+      update: {
+        level: 0,
+        planType: 'FREE',
+        price: 0,
+        pointsReward: 0,
+        duration: 99999,
+        extraVotes: 0,
+        priorityTicket: false,
+        leaderboardBoost: 1.0,
+        vipSeat: false,
+        challengeAccess: false, // ❌ Can only VIEW challenges, cannot accept
+        communityAccess: false, // ❌ No community access
+      },
       create: {
         name: 'FREE',
         planType: 'FREE',
+        level: 0,
         price: 0,
+        pointsReward: 0,
         duration: 99999,
         badgeIcon: 'free-badge',
         extraVotes: 0,
         priorityTicket: false,
         leaderboardBoost: 1.0,
+        vipSeat: false,
+        challengeAccess: false,
+        communityAccess: false,
       },
     }),
     prisma.membership.upsert({
       where: { name: 'SILVER' },
-      update: {},
+      update: {
+        level: 1,
+        planType: 'SILVER',
+        price: 99,
+        pointsReward: 10,
+        duration: 30,
+        extraVotes: 1,
+        priorityTicket: false, // ❌
+        leaderboardBoost: 1.0,
+        vipSeat: false,
+        challengeAccess: true, // ✅ 1. Access to challenges
+        communityAccess: true, // ✅ 2. Access to special community groups
+      },
       create: {
         name: 'SILVER',
         planType: 'SILVER',
+        level: 1,
         price: 99,
+        pointsReward: 10,
         duration: 30,
         badgeIcon: 'silver-badge',
         extraVotes: 1,
         priorityTicket: false,
-        leaderboardBoost: 1.5,
+        leaderboardBoost: 1.0,
+        vipSeat: false,
+        challengeAccess: true,
+        communityAccess: true,
       },
     }),
     prisma.membership.upsert({
       where: { name: 'GOLD' },
-      update: {},
+      update: {
+        level: 2,
+        planType: 'GOLD',
+        price: 199,
+        pointsReward: 20,
+        duration: 30,
+        extraVotes: 3,
+        priorityTicket: true, // ✅ 1. Priority ticket booking
+        leaderboardBoost: 1.0,
+        vipSeat: false,
+        challengeAccess: true, // ✅ 2. Access to challenges
+        communityAccess: true, // ✅ 3. Access to special community groups
+      },
       create: {
         name: 'GOLD',
         planType: 'GOLD',
+        level: 2,
         price: 199,
+        pointsReward: 20,
         duration: 30,
         badgeIcon: 'gold-badge',
         extraVotes: 3,
         priorityTicket: true,
-        leaderboardBoost: 2.0,
+        leaderboardBoost: 1.0,
+        vipSeat: false,
+        challengeAccess: true,
+        communityAccess: true,
       },
     }),
     prisma.membership.upsert({
       where: { name: 'VIP' },
-      update: {},
+      update: {
+        level: 3,
+        planType: 'VIP',
+        price: 499,
+        pointsReward: 30,
+        duration: 30,
+        extraVotes: 5,
+        priorityTicket: true, // ✅ 1. Priority ticket booking
+        leaderboardBoost: 1.5, // ✅ 2. 1.5x leaderboard boost
+        vipSeat: false,
+        challengeAccess: true, // ✅ 3. Access to challenges
+        communityAccess: true, // ✅ 4. Access to special community groups
+      },
       create: {
         name: 'VIP',
         planType: 'VIP',
+        level: 3,
         price: 499,
+        pointsReward: 30,
         duration: 30,
         badgeIcon: 'vip-badge',
         extraVotes: 5,
         priorityTicket: true,
-        leaderboardBoost: 3.0,
+        leaderboardBoost: 1.5,
+        vipSeat: false,
+        challengeAccess: true,
+        communityAccess: true,
+      },
+    }),
+    prisma.membership.upsert({
+      where: { name: 'VVIP' },
+      update: {
+        level: 4,
+        planType: 'VVIP',
+        price: 999,
+        pointsReward: 50,
+        duration: 30,
+        extraVotes: 10,
+        priorityTicket: true, // ✅ 1. Priority ticket booking
+        leaderboardBoost: 2.0, // ✅ 2. 2x leaderboard boost
+        vipSeat: true, // ✅ 3. VIP Seat
+        challengeAccess: true, // ✅ 4. Access to challenges
+        communityAccess: true, // ✅ 5. Access to special community groups
+      },
+      create: {
+        name: 'VVIP',
+        planType: 'VVIP',
+        level: 4,
+        price: 999,
+        pointsReward: 50,
+        duration: 30,
+        badgeIcon: 'vvip-badge',
+        extraVotes: 10,
+        priorityTicket: true,
+        leaderboardBoost: 2.0,
+        vipSeat: true,
+        challengeAccess: true,
+        communityAccess: true,
       },
     }),
   ]);
@@ -142,7 +246,7 @@ async function main() {
     data: {
       userId: superAdmin.id,
       type: 'ANNOUNCEMENT',
-      content: 'Welcome to the Community Platform! This is your hub for events, voting, and community engagement.',
+      content: 'Welcome to KSKA! This is your hub for events, voting, and community engagement.',
       hashtags: 'welcome community announcement',
       isPinned: true,
     },
@@ -175,8 +279,8 @@ async function main() {
   const sampleTicket = await prisma.ticket.create({
     data: {
       creatorId: employer.id,
-      title: 'Community Meetup 2026',
-      description: 'Join us for the annual community meetup. Networking, talks, and fun!',
+      title: 'KSKA Meetup 2026',
+      description: 'Join us for the annual KSKA meetup. Networking, talks, and fun!',
       price: 0,
       quantity: 500,
       eventDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
@@ -189,7 +293,7 @@ async function main() {
   const sampleSetting = await prisma.setting.upsert({
     where: { key: 'app_name' },
     update: {},
-    create: { key: 'app_name', value: 'Community Hub' },
+    create: { key: 'app_name', value: 'KSKA' },
   });
 
   console.log('✅ Settings seeded');
@@ -198,9 +302,9 @@ async function main() {
   console.log('');
   console.log('Test accounts:');
   console.log('  ibrahimkamil362@gmail.com / admin123');
-  console.log('  admin@community.com / admin123');
-  console.log('  employer@community.com / employer123');
-  console.log('  user@community.com / user123');
+  console.log('  admin@kska.com / admin123');
+  console.log('  employer@kska.com / employer123');
+  console.log('  user@kska.com / user123');
 }
 
 main()

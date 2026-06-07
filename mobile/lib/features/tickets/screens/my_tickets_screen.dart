@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../providers/auth_provider.dart';
@@ -120,6 +121,45 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
                       style: TextStyle(color: Colors.grey.shade600),
                     ),
                   ],
+                ),
+              ],
+              // Referral Code Display
+              if (p['referralCode'] != null) ...[
+                const SizedBox(height: 8),
+                GestureDetector(
+                  onTap: () {
+                    Clipboard.setData(ClipboardData(text: p['referralCode']));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Referral code copied!')),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).primaryColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: Theme.of(context).primaryColor.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.card_giftcard, size: 16, color: Theme.of(context).primaryColor),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Code: ${p['referralCode']}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: Theme.of(context).primaryColor,
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Icon(Icons.copy, size: 14, color: Theme.of(context).primaryColor),
+                      ],
+                    ),
+                  ),
                 ),
               ],
               if (qrCode != null) ...[

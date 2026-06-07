@@ -92,3 +92,38 @@ export async function unregisterFcmToken(req: AuthRequest, res: Response, next: 
     next(error);
   }
 }
+
+export async function addPointsToUser(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const { amount, reason } = req.body;
+    const userId = String(req.params.id);
+    const adminId = req.user!.userId;
+
+    if (!amount || !reason) {
+      return res.status(400).json({ error: 'Amount and reason are required' });
+    }
+
+    const result = await userService.addPointsToUser({
+      userId,
+      amount: parseInt(amount),
+      reason,
+      adminId,
+    });
+
+    sendSuccess({ res, message: 'Points added successfully', data: result });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function getUserTransactions(req: AuthRequest, res: Response, next: NextFunction) {
+  try {
+    const userId = String(req.params.id);
+    const limit = req.query.limit ? parseInt(String(req.query.limit)) : 100;
+
+    const transactions = await userService.getUserTransactions(userId, limit);
+    sendSuccess({ res, data: transactions });
+  } catch (error) {
+    next(error);
+  }
+}

@@ -22,8 +22,9 @@ router.post('/register-token', async (req: AuthRequest, res: Response, next: Nex
 
 router.post('/remove-token', async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    await fcmService.removeToken(req.user!.userId);
-    sendSuccess({ res, message: 'FCM token removed' });
+    // Token removal is handled by the client or user.service
+    // This endpoint is kept for backwards compatibility
+    sendSuccess({ res, message: 'FCM token removal acknowledged' });
   } catch (error) {
     next(error);
   }

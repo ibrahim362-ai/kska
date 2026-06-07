@@ -6,6 +6,7 @@ import { config } from '../../config';
 import { uploadFile } from '../upload/upload.service';
 import { NotFoundError } from '../../utils/errors';
 import { queueEmail } from '../../jobs/email.job';
+import prisma from '../../config/prisma';
 
 /**
  * Get the public manual payment instructions (bank accounts, etc.).
@@ -85,13 +86,19 @@ export async function reviewProof(req: AuthRequest, res: Response, next: NextFun
 
     // Notify user via email
     try {
+      // Get user information from the proof
+      const userInfo = await prisma.user.findUnique({
+        where: { id: result.proof.userId },
+        select: { email: true }
+      });
+
       const html = result.proof.status === 'APPROVED'
         ? `<p>Your payment of ${result.payment.amount} ${result.payment.currency} has been <strong>approved</strong>. Your membership/ticket is now active.</p>`
         : `<p>Your payment of ${result.payment.amount} ${result.payment.currency} has been <strong>rejected</strong>. Reason: ${req.body.rejectionReason}</p>`;
 
       await queueEmail({
-        to: result.proof.user?.email || '',
-        subject: `Payment ${result.proof.status === 'APPROVED' ? 'Approved' : 'Rejected'} - Community Hub`,
+        to: userInfo?.email || '',
+        subject: `Payment ${result.proof.status === 'APPROVED' ? 'Approved' : 'Rejected'} - KSKA`,
         html,
       });
     } catch (err) {

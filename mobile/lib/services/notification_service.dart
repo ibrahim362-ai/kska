@@ -19,7 +19,6 @@ class NotificationService {
   factory NotificationService() => _instance;
   NotificationService._();
 
-  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
   final FlutterLocalNotificationsPlugin _local = FlutterLocalNotificationsPlugin();
 
   String? _fcmToken;
@@ -36,70 +35,75 @@ class NotificationService {
     if (_initialized) return;
 
     try {
-      // Initialize Firebase
+      // Initialize Firebase — skip silently if not configured (e.g. web without firebase_options)
       await Firebase.initializeApp();
 
-      // Set up background handler
-      FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+      // Set up background handler (native only)
+      if (!kIsWeb) {
+        FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
+      }
 
       // Request permission (iOS + Android 13+)
       await _requestPermissions();
 
-      // Get FCM token
-      _fcmToken = await _fcm.getToken();
-      if (kDebugMode) {
-        print('FCM Token: $_fcmToken');
+      // Get FCM token (not available on web without proper Firebase setup)
+      try {
+        _fcmToken = await FirebaseMessaging.instance.getToken();
+        if (kDebugMode) print('FCM Token: $_fcmToken');
+      } catch (e) {
+        if (kDebugMode) print('FCM token unavailable: $e');
       }
 
-      // Configure local notifications
-      const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-      const iosInit = DarwinInitializationSettings(
-        requestAlertPermission: true,
-        requestBadgePermission: true,
-        requestSoundPermission: true,
-      );
-      await _local.initialize(
-        const InitializationSettings(android: androidInit, iOS: iosInit),
-        onDidReceiveNotificationResponse: (response) {
-          // Handle notification tap (foreground)
-          if (kDebugMode) {
-            print('Local notification tapped: ${response.payload}');
-          }
-        },
-      );
+      // Configure local notifications (not supported on web)
+      if (!kIsWeb) {
+        const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+        const iosInit = DarwinInitializationSettings(
+          requestAlertPermission: true,
+          requestBadgePermission: true,
+          requestSoundPermission: true,
+        );
+        await _local.initialize(
+          const InitializationSettings(android: androidInit, iOS: iosInit),
+          onDidReceiveNotificationResponse: (response) {
+            if (kDebugMode) print('Local notification tapped: ${response.payload}');
+          },
+        );
+      }
 
       // Listen for token refresh
-      _fcm.onTokenRefresh.listen((newToken) {
+      FirebaseMessaging.instance.onTokenRefresh.listen((newToken) {
         _fcmToken = newToken;
-        // Re-register with backend
         _registerTokenWithBackend(newToken);
       });
 
       _initialized = true;
     } catch (e) {
-      if (kDebugMode) {
-        print('NotificationService init failed: $e');
-      }
+      // Firebase not configured or unavailable — non-fatal, skip silently
+      if (kDebugMode) print('NotificationService init skipped: $e');
+      _initialized = true; // Mark as initialized so we don't retry on every login
     }
   }
 
   /// Request notification permissions
   Future<bool> _requestPermissions() async {
-    // FCM permission
-    final settings = await _fcm.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-    );
+    try {
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+      );
 
-    // Also request via permission_handler for Android 13+
-    if (defaultTargetPlatform == TargetPlatform.android) {
-      await Permission.notification.request();
+      if (!kIsWeb && defaultTargetPlatform == TargetPlatform.android) {
+        await Permission.notification.request();
+      }
+
+      return settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional;
+    } catch (e) {
+      if (kDebugMode) print('Permission request failed: $e');
+      return false;
     }
-
-    return settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional;
   }
 
   /// Register FCM token with backend (call after login)
@@ -112,13 +116,9 @@ class NotificationService {
     try {
       final service = api ?? ApiService();
       await service.dio.post('/users/fcm-token', data: {'token': token});
-      if (kDebugMode) {
-        print('FCM token registered with backend');
-      }
+      if (kDebugMode) print('FCM token registered with backend');
     } catch (e) {
-      if (kDebugMode) {
-        print('Failed to register FCM token: $e');
-      }
+      if (kDebugMode) print('Failed to register FCM token: $e');
     }
   }
 
@@ -128,22 +128,21 @@ class NotificationService {
     try {
       await api.dio.delete('/users/fcm-token', data: {'token': _fcmToken});
     } catch (e) {
-      if (kDebugMode) {
-        print('Failed to unregister FCM token: $e');
-      }
+      if (kDebugMode) print('Failed to unregister FCM token: $e');
     }
   }
 
-  /// Show a local notification (for testing or when FCM isn't available)
+  /// Show a local notification
   Future<void> showLocal({
     required String title,
     required String body,
     String? payload,
   }) async {
+    if (kIsWeb) return; // Not supported on web
     const androidDetails = AndroidNotificationDetails(
-      'community_hub_default',
-      'Community Hub',
-      channelDescription: 'Notifications from Community Hub',
+      'kska_default',
+      'KSKA',
+      channelDescription: 'Notifications from KSKA',
       importance: Importance.high,
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
@@ -160,13 +159,20 @@ class NotificationService {
     );
   }
 
-  /// Subscribe to a topic (for broadcast notifications)
   Future<void> subscribeToTopic(String topic) async {
-    await _fcm.subscribeToTopic(topic);
+    try {
+      await FirebaseMessaging.instance.subscribeToTopic(topic);
+    } catch (e) {
+      if (kDebugMode) print('subscribeToTopic failed: $e');
+    }
   }
 
   Future<void> unsubscribeFromTopic(String topic) async {
-    await _fcm.unsubscribeFromTopic(topic);
+    try {
+      await FirebaseMessaging.instance.unsubscribeFromTopic(topic);
+    } catch (e) {
+      if (kDebugMode) print('unsubscribeFromTopic failed: $e');
+    }
   }
 }
 

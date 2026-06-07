@@ -9,24 +9,50 @@ const transporter = nodemailer.createTransport({
     user: config.smtp.user,
     pass: config.smtp.pass,
   },
+  connectionTimeout: 15000,  // 15 seconds
+  greetingTimeout: 15000,    // 15 seconds
+  socketTimeout: 20000,      // 20 seconds
 });
 
-export async function sendEmail(to: string, subject: string, html: string) {
+export async function sendEmail(data: { to: string; subject: string; html: string; text?: string }) {
+  const { to, subject, html } = data;
+  
   if (!config.smtp.user || !config.smtp.pass) {
-    console.log(`[EMAIL MOCK] To: ${to}, Subject: ${subject}`);
-    return;
+    console.error('[EMAIL ERROR] SMTP credentials not configured');
+    throw new Error('Email service not configured. Please contact administrator.');
   }
 
   try {
-    await transporter.sendMail({
-      from: `"Community Platform" <${config.smtp.user}>`,
+    console.log(`[EMAIL] Attempting to send email to ${to}...`);
+    
+    // Add timeout wrapper (25 seconds max to match mobile timeout)
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error('Email timeout after 25 seconds')), 25000);
+    });
+    
+    const sendPromise = transporter.sendMail({
+      from: `"KSKA" <${config.smtp.user}>`,
       to,
       subject,
       html,
     });
-  } catch (error) {
-    console.error('[EMAIL ERROR] Failed to send email:', error);
-    // Don't throw - email failure shouldn't break signup
+    
+    const info = await Promise.race([sendPromise, timeoutPromise]);
+    console.log('[EMAIL SUCCESS] Message sent:', (info as any).messageId);
+    return info;
+  } catch (error: any) {
+    console.error('[EMAIL ERROR] Failed to send email:', error.message);
+    
+    // More specific error messages
+    if (error.message.includes('timeout')) {
+      throw new Error('Email service is slow. Your verification code will arrive shortly. Please check your inbox in a moment.');
+    } else if (error.code === 'EAUTH') {
+      throw new Error('Email authentication failed. Please contact administrator.');
+    } else if (error.code === 'ECONNECTION') {
+      throw new Error('Cannot connect to email server. Please try again later.');
+    }
+    
+    throw new Error('Failed to send email. Please check your email address or try again later.');
   }
 }
 

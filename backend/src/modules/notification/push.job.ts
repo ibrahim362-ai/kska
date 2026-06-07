@@ -20,6 +20,12 @@ export async function processPushJob(job: Job<PushJobData>) {
 }
 
 export async function queuePush(data: PushJobData) {
-  const { pushQueue } = await import('../queue');
-  await pushQueue().add('send', data);
+  try {
+    const queueModule = await import('../../queue/index.js');
+    const queue = queueModule.pushQueue();
+    if (!queue) return;
+    await queue.add('send', data);
+  } catch (err) {
+    // Queue not available
+  }
 }

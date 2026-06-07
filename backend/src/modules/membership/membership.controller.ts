@@ -50,8 +50,8 @@ export async function getUserMemberships(req: AuthRequest, res: Response, next: 
 
 export async function getAllUserMemberships(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const memberships = await membershipService.getAllUserMemberships(req.query as any);
-    sendSuccess({ res, data: memberships.data, meta: memberships.meta });
+    const result = await membershipService.getAllUserMemberships(req.query as any);
+    sendSuccess({ res, data: result.data });
   } catch (error) {
     next(error);
   }

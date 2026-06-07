@@ -15,8 +15,8 @@
   "dependencies": {
     "@sentry/react": "^8.40.0",
     "@tailwindcss/vite": "^4.3.0",
-    "@tanstack/react-table": "^8.20.5",
     "@tanstack/react-query": "^5.101.0",
+    "@tanstack/react-table": "^8.21.3",
     "axios": "^1.17.0",
     "lucide-react": "^1.17.0",
     "react": "^19.2.6",

@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:image_picker/image_picker.dart';
 import '../models/models.dart';
@@ -12,8 +13,8 @@ class ApiService {
     print('ApiService initialized with baseUrl: $baseUrl');
     dio = Dio(BaseOptions(
       baseUrl: baseUrl,
-      connectTimeout: const Duration(seconds: 10),
-      receiveTimeout: const Duration(seconds: 10),
+      connectTimeout: const Duration(seconds: 15),
+      receiveTimeout: const Duration(seconds: 30), // Increased for email sending
       headers: {'Content-Type': 'application/json'},
     ));
 
@@ -86,8 +87,25 @@ class ApiService {
     required DateTime paidAt,
     String? notes,
   }) async {
+    // Create MultipartFile based on platform
+    MultipartFile receiptMultipart;
+    if (kIsWeb) {
+      // Web: Use bytes
+      final bytes = await receiptFile.readAsBytes();
+      receiptMultipart = MultipartFile.fromBytes(
+        bytes,
+        filename: receiptFile.name,
+      );
+    } else {
+      // Mobile/Desktop: Use file path
+      receiptMultipart = await MultipartFile.fromFile(
+        receiptFile.path,
+        filename: 'receipt.jpg',
+      );
+    }
+
     final formData = FormData.fromMap({
-      'receipt': await MultipartFile.fromFile(receiptFile.path, filename: 'receipt.jpg'),
+      'receipt': receiptMultipart,
       'senderName': senderName,
       if (senderPhone != null && senderPhone.isNotEmpty) 'senderPhone': senderPhone,
       if (transactionRef != null && transactionRef.isNotEmpty) 'transactionRef': transactionRef,

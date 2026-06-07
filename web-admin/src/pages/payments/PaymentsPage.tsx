@@ -13,6 +13,7 @@ export default function PaymentsPage() {
   const [reviewModal, setReviewModal] = useState<ManualPaymentProof | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
   const [imageModal, setImageModal] = useState<string | null>(null);
+  const [detailModal, setDetailModal] = useState<ManualPaymentProof | null>(null);
   const queryClient = useQueryClient();
 
   // ---------- Transactions tab ----------
@@ -204,8 +205,15 @@ export default function PaymentsPage() {
                         {new Date(proof.createdAt).toLocaleString()}
                       </td>
                       <td className="px-6 py-4">
-                        {proof.status === 'PENDING' && (
+                        {proof.status === 'PENDING' ? (
                           <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => setDetailModal(proof)}
+                              className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all text-xs font-semibold border border-indigo-200 flex items-center gap-1.5"
+                              title="View details"
+                            >
+                              <Eye size={14} /> Details
+                            </button>
                             <button
                               onClick={() => handleReview(proof, 'APPROVED')}
                               disabled={reviewMutation.isPending}
@@ -219,6 +227,16 @@ export default function PaymentsPage() {
                               className="px-3 py-1.5 rounded-xl bg-red-50 text-red-700 hover:bg-red-100 transition-all text-xs font-semibold border border-red-200 disabled:opacity-50"
                             >
                               ✗ Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end">
+                            <button
+                              onClick={() => setDetailModal(proof)}
+                              className="px-3 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 transition-all text-xs font-semibold border border-indigo-200 flex items-center gap-1.5"
+                              title="View details"
+                            >
+                              <Eye size={14} /> Details
                             </button>
                           </div>
                         )}
@@ -339,6 +357,225 @@ export default function PaymentsPage() {
             <XIcon size={24} />
           </button>
           <img src={imageModal} alt="Receipt full view" className="max-w-full max-h-full rounded-xl shadow-2xl" onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
+
+      {/* Detail modal */}
+      {detailModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
+            {/* Header */}
+            <div className="sticky top-0 bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-6 py-5 flex justify-between items-center rounded-t-2xl">
+              <div>
+                <h3 className="text-xl font-bold">Payment Proof Details</h3>
+                <p className="text-indigo-100 text-sm mt-1">Review complete payment information</p>
+              </div>
+              <button
+                onClick={() => setDetailModal(null)}
+                className="p-2 hover:bg-white/20 rounded-lg transition-all"
+              >
+                <XIcon size={20} />
+              </button>
+            </div>
+
+            {/* Content */}
+            <div className="p-6 space-y-6">
+              {/* Status Badge */}
+              <div className="flex items-center justify-between">
+                <span className={`text-sm px-4 py-2 rounded-full font-bold border-2 ${statusColors[detailModal.status]}`}>
+                  {detailModal.status}
+                </span>
+                <span className="text-xs text-gray-500">
+                  {new Date(detailModal.createdAt).toLocaleString('en-US', {
+                    dateStyle: 'medium',
+                    timeStyle: 'short'
+                  })}
+                </span>
+              </div>
+
+              {/* Receipt Image */}
+              <div className="border-2 border-gray-200 rounded-xl overflow-hidden">
+                <div className="bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-3 border-b-2 border-gray-200">
+                  <h4 className="text-sm font-bold text-gray-700 flex items-center gap-2">
+                    <ImageIcon size={16} /> Payment Receipt
+                  </h4>
+                </div>
+                <div className="p-4 bg-gray-50">
+                  <img
+                    src={detailModal.receiptUrl}
+                    alt="Payment receipt"
+                    className="w-full rounded-lg shadow-md cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setImageModal(detailModal.receiptUrl)}
+                  />
+                  <p className="text-xs text-gray-500 mt-2 text-center">Click to view full size</p>
+                </div>
+              </div>
+
+              {/* Payment Information */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* User Info */}
+                <div className="border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-blue-50 to-white">
+                  <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                    </svg>
+                    User Information
+                  </h4>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold">Full Name</p>
+                      <p className="text-sm font-bold text-gray-900">{detailModal.user?.fullName}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold">Email</p>
+                      <p className="text-sm font-mono text-gray-700">{detailModal.user?.email}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold">Username</p>
+                      <p className="text-sm text-gray-700">@{detailModal.user?.username}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Sender Info */}
+                <div className="border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-green-50 to-white">
+                  <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                    </svg>
+                    Sender Information
+                  </h4>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold">Sender Name</p>
+                      <p className="text-sm font-bold text-gray-900">{detailModal.senderName}</p>
+                    </div>
+                    {detailModal.senderPhone && (
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold">Phone Number</p>
+                        <p className="text-sm font-mono text-gray-700">{detailModal.senderPhone}</p>
+                      </div>
+                    )}
+                    {detailModal.transactionRef && (
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold">Transaction Ref</p>
+                        <p className="text-sm font-mono text-gray-700">{detailModal.transactionRef}</p>
+                      </div>
+                    )}
+                    {detailModal.paymentMethod && (
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold">Payment Method</p>
+                        <p className="text-sm font-semibold text-gray-900">{detailModal.paymentMethod}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Payment Details */}
+                <div className="border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-emerald-50 to-white">
+                  <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <DollarSign size={16} /> Payment Details
+                  </h4>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold">Reference Number</p>
+                      <p className="text-sm font-mono font-bold text-gray-900">{detailModal.payment.reference}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold">Amount</p>
+                      <p className="text-2xl font-bold text-emerald-600">
+                        {detailModal.payment.currency} {detailModal.payment.amount.toLocaleString()}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold">Payment Status</p>
+                      <span className={`text-xs px-2 py-1 rounded-full font-bold ${statusColors[detailModal.payment.status]}`}>
+                        {detailModal.payment.status}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Additional Info */}
+                <div className="border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-purple-50 to-white">
+                  <h4 className="text-sm font-bold text-gray-700 mb-3 flex items-center gap-2">
+                    <FileText size={16} /> Additional Information
+                  </h4>
+                  <div className="space-y-2">
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold">Paid At</p>
+                      <p className="text-sm text-gray-700">
+                        {new Date(detailModal.paidAt).toLocaleString('en-US', {
+                          dateStyle: 'full',
+                          timeStyle: 'short'
+                        })}
+                      </p>
+                    </div>
+                    {detailModal.notes && (
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold">Notes</p>
+                        <p className="text-sm text-gray-700 bg-gray-50 p-2 rounded-lg border border-gray-200">
+                          {detailModal.notes}
+                        </p>
+                      </div>
+                    )}
+                    {detailModal.rejectionReason && (
+                      <div>
+                        <p className="text-xs text-red-600 font-semibold">Rejection Reason</p>
+                        <p className="text-sm text-red-700 bg-red-50 p-2 rounded-lg border border-red-200">
+                          {detailModal.rejectionReason}
+                        </p>
+                      </div>
+                    )}
+                    {detailModal.reviewedBy && (
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold">Reviewed By</p>
+                        <p className="text-sm text-gray-700">{detailModal.reviewedBy}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              {detailModal.status === 'PENDING' && (
+                <div className="flex gap-3 pt-4 border-t-2 border-gray-200">
+                  <button
+                    onClick={() => {
+                      handleReview(detailModal, 'APPROVED');
+                      setDetailModal(null);
+                    }}
+                    disabled={reviewMutation.isPending}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-xl font-bold hover:from-green-600 hover:to-green-700 transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    <Check size={20} /> Approve Payment
+                  </button>
+                  <button
+                    onClick={() => {
+                      setDetailModal(null);
+                      setReviewModal(detailModal);
+                    }}
+                    disabled={reviewMutation.isPending}
+                    className="flex-1 px-6 py-3 bg-gradient-to-r from-red-500 to-red-600 text-white rounded-xl font-bold hover:from-red-600 hover:to-red-700 transition-all shadow-lg disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    <X size={20} /> Reject Payment
+                  </button>
+                </div>
+              )}
+
+              {/* Close Button for Approved/Rejected */}
+              {detailModal.status !== 'PENDING' && (
+                <div className="pt-4 border-t-2 border-gray-200">
+                  <button
+                    onClick={() => setDetailModal(null)}
+                    className="w-full px-6 py-3 bg-gradient-to-r from-gray-500 to-gray-600 text-white rounded-xl font-bold hover:from-gray-600 hover:to-gray-700 transition-all shadow-lg"
+                  >
+                    Close
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       )}
     </div>

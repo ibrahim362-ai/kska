@@ -1,4 +1,4 @@
-# Community Hub
+# KSKA
 
 A multi-platform community engagement platform for **Ethiopia** 🇪🇹. Posts, events, voting, memberships, and **manual payment** verification.
 
@@ -84,7 +84,7 @@ A multi-platform community engagement platform for **Ethiopia** 🇪🇹. Posts,
 ```bash
 # 1. Clone and configure
 git clone <repo>
-cd community-hub
+cd kska
 cp .env.example .env
 cp backend/.env.example backend/.env
 cp web-admin/.env.example web-admin/.env
@@ -163,11 +163,11 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 docker compose exec backend npx prisma migrate deploy
 
 # 4. Verify
-./scripts/smoke-test.sh https://api.communityhub.com
+./scripts/smoke-test.sh https://api.kska.com
 
 # 5. Set up cron for backups
 crontab -e
-# Add: 0 2 * * * /opt/community-hub/scripts/backup.sh
+# Add: 0 2 * * * /opt/kska/scripts/backup.sh
 ```
 
 ## 💳 Manual Payment Flow
@@ -187,7 +187,7 @@ Configure your bank accounts in `backend/.env`:
 ```env
 MANUAL_PAYMENT_BANK_NAME="Commercial Bank of Ethiopia"
 MANUAL_PAYMENT_ACCOUNT_NUMBER="1000123456789"
-MANUAL_PAYMENT_ACCOUNT_HOLDER="Community Hub PLC"
+MANUAL_PAYMENT_ACCOUNT_HOLDER="KSKA PLC"
 MANUAL_PAYMENT_TELEBIRR_NUMBER="0911223344"
 ```
 
@@ -250,13 +250,13 @@ Targets (verified by k6 load tests):
 
 ## 📞 Contact
 
-- **Email:** hello@communityhub.com
-- **Support:** support@communityhub.com
-- **Privacy:** privacy@communityhub.com
-- **Legal:** legal@communityhub.com
+- **Email:** hello@kska.com
+- **Support:** support@kska.com
+- **Privacy:** privacy@kska.com
+- **Legal:** legal@kska.com
 - **Address:** Bole, Addis Ababa, Ethiopia 🇪🇹
 - **Phone:** +251 91 234 5678
 
 ## 📜 License
 
-Proprietary — © 2026 Community Hub PLC. All rights reserved.
+Proprietary — © 2026 KSKA PLC. All rights reserved.

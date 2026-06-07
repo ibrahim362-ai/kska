@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -30,8 +31,8 @@ class AuthNotifier extends Notifier<User?> {
       await _api.saveTokens(data['accessToken'], data['refreshToken']);
       state = User.fromJson(data['user']);
 
-      // Connect socket + register FCM token
-      await _onAuthenticated(data['user']['id']);
+      // Connect socket + register FCM token in background
+      unawaited(_onAuthenticated(data['user']['id']));
 
       return null;
     } catch (e) {
@@ -61,7 +62,8 @@ class AuthNotifier extends Notifier<User?> {
       final data = res.data['data'];
       await _api.saveTokens(data['accessToken'], data['refreshToken']);
       state = User.fromJson(data['user']);
-      await _onAuthenticated(data['user']['id']);
+      // Run socket + notification setup in background so errors don't fail signup
+      unawaited(_onAuthenticated(data['user']['id']));
       return null;
     } catch (e) {
       if (e is DioException) {
@@ -76,8 +78,13 @@ class AuthNotifier extends Notifier<User?> {
     String username,
     String password,
     String fullName,
-    String code,
-  ) async {
+    String code, {
+    String? phone,
+    int? age,
+    String? gender,
+    String? city,
+    String? country,
+  }) async {
     try {
       final res = await _api.dio.post(
         '/auth/signup',
@@ -87,12 +94,18 @@ class AuthNotifier extends Notifier<User?> {
           'password': password,
           'fullName': fullName,
           'code': code,
+          if (phone != null) 'phone': phone,
+          if (age != null) 'age': age,
+          if (gender != null) 'gender': gender,
+          if (city != null) 'city': city,
+          if (country != null) 'country': country,
         },
       );
       final data = res.data['data'];
       await _api.saveTokens(data['accessToken'], data['refreshToken']);
       state = User.fromJson(data['user']);
-      await _onAuthenticated(data['user']['id']);
+      // Run socket + notification setup in background so errors don't fail signup
+      unawaited(_onAuthenticated(data['user']['id']));
       return null;
     } catch (e) {
       if (e is DioException) {

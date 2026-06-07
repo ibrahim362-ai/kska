@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ColumnDef } from '@tanstack/react-table';
+import type { ColumnDef } from '@tanstack/react-table';
 import { Ban, CheckCircle, Trash2, MoreVertical, KeyRound, ShieldCheck, UserCog } from 'lucide-react';
 import api from '../../services/api';
 import type { User } from '../../types';

@@ -59,17 +59,12 @@ export async function deepHealth(_req: Request, res: Response) {
     };
   });
 
-  // Check 2: Redis
-  result.checks.redis = await runCheck('redis', async () => {
-    const start = Date.now();
-    const conn = getConnection();
-    const pong = await conn.ping();
-    if (pong !== 'PONG') throw new Error('Unexpected ping response: ' + pong);
-    return {
-      message: 'Connected',
-      details: { pingMs: Date.now() - start },
-    };
-  });
+  // Check 2: Redis (disabled)
+  result.checks.redis = {
+    status: 'ok',
+    duration: 0,
+    message: 'Redis disabled (not required)',
+  };
 
   // Check 3: Disk space
   result.checks.disk = await runCheck('disk', async () => {

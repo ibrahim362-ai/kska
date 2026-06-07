@@ -7,11 +7,11 @@ const options: swaggerJsdoc.Options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Community Hub API',
+      title: 'KSKA API',
       version: '1.0.0',
       description:
-        'Multi-platform community engagement API (auth, posts, votes, tickets, memberships, manual payments)',
-      contact: { name: 'Community Hub Team' },
+        'Multi-platform KSKA engagement API (auth, posts, votes, tickets, memberships, manual payments)',
+      contact: { name: 'KSKA Team' },
     },
     servers: [
       { url: config.backendUrl, description: 'Current server' },
@@ -34,7 +34,7 @@ const options: swaggerJsdoc.Options = {
     tags: [
       { name: 'Auth', description: 'Authentication & user management' },
       { name: 'Users', description: 'User profile & management' },
-      { name: 'Posts', description: 'Community posts, comments, likes, saves' },
+      { name: 'Posts', description: 'KSKA posts, comments, likes, saves' },
       { name: 'Votes', description: 'Voting system' },
       { name: 'Memberships', description: 'Subscription plans' },
       { name: 'Tickets', description: 'Event tickets & QR check-in' },
@@ -57,7 +57,7 @@ export function mountSwagger(app: Express) {
     '/api/docs',
     swaggerUi.serve,
     swaggerUi.setup(swaggerSpec, {
-      customSiteTitle: 'Community Hub API Docs',
+      customSiteTitle: 'KSKA API Docs',
       swaggerOptions: { persistAuthorization: true },
     })
   );

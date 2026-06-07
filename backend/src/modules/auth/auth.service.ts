@@ -3,13 +3,18 @@ import prisma from '../../config/prisma';
 import { generateAccessToken, generateRefreshToken, verifyRefreshToken } from '../../utils/tokens';
 import { BadRequestError, UnauthorizedError, ConflictError, NotFoundError } from '../../utils/errors';
 import { sendEmail, getVerificationEmailHtml } from '../../utils/email';
+import { IconService } from '../../services/icon.service';
 
 export async function signup(data: {
   email: string;
   username: string;
   password: string;
   fullName: string;
-  phone?: string;
+  phone: string;
+  age?: number;
+  gender?: string;
+  city: string;
+  country: string;
   code?: string;
 }) {
   const existing = await prisma.user.findFirst({
@@ -42,9 +47,49 @@ export async function signup(data: {
       password: hashedPassword,
       fullName: data.fullName,
       phone: data.phone,
+      age: data.age,
+      gender: data.gender,
+      city: data.city,
+      country: data.country,
       isVerified: !!data.code,
     },
   });
+
+  // Award 10 icons for signup
+  try {
+    await IconService.awardIcons(
+      user.id,
+      10,
+      'SIGNUP',
+      'Welcome bonus for signing up',
+      { email: user.email, username: user.username }
+    );
+  } catch (error) {
+    console.error('Failed to award signup icons:', error);
+  }
+
+  // Auto-assign FREE membership
+  try {
+    const freeMembership = await prisma.membership.findFirst({
+      where: { planType: 'FREE' },
+    });
+
+    if (freeMembership) {
+      const expiresAt = new Date();
+      expiresAt.setFullYear(expiresAt.getFullYear() + 100); // FREE membership never expires
+
+      await prisma.userMembership.create({
+        data: {
+          userId: user.id,
+          membershipId: freeMembership.id,
+          expiresAt,
+          isActive: true,
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Failed to assign FREE membership:', error);
+  }
 
   const accessToken = generateAccessToken({ userId: user.id, role: user.role });
   const refreshTokenStr = generateRefreshToken({ userId: user.id });
@@ -65,6 +110,16 @@ export async function signup(data: {
       fullName: user.fullName,
       role: user.role,
       isVerified: user.isVerified,
+      isBanned: user.isBanned,
+      createdAt: user.createdAt,
+      avatar: user.avatar,
+      bio: user.bio,
+      phone: user.phone,
+      age: user.age,
+      gender: user.gender,
+      city: user.city,
+      country: user.country,
+      icons: user.icons,
     },
     accessToken,
     refreshToken: refreshTokenStr,
@@ -99,6 +154,7 @@ export async function signin(data: { email: string; password: string }) {
       role: user.role,
       avatar: user.avatar,
       isVerified: user.isVerified,
+      icons: user.icons,
     },
     accessToken,
     refreshToken: refreshTokenStr,
@@ -137,6 +193,7 @@ export async function signinByUsername(data: { username: string; password: strin
       role: user.role,
       avatar: user.avatar,
       isVerified: user.isVerified,
+      icons: user.icons,
     },
     accessToken,
     refreshToken: refreshTokenStr,
@@ -158,7 +215,11 @@ export async function forgotPassword(email: string) {
     },
   });
 
-  await sendEmail(email, 'Password Reset', getVerificationEmailHtml(resetCode));
+  await sendEmail({
+    to: email,
+    subject: 'Password Reset',
+    html: getVerificationEmailHtml(resetCode)
+  });
 }
 
 export async function resetPassword(data: { token: string; newPassword: string }) {
@@ -250,6 +311,7 @@ export async function getProfile(userId: string) {
     phone: user.phone,
     role: user.role,
     isVerified: user.isVerified,
+    icons: user.icons,
     createdAt: user.createdAt,
   };
 }
@@ -322,9 +384,17 @@ export async function sendSignupOtp(email: string) {
     },
   });
 
-  await sendEmail(email, 'Your Verification Code', getVerificationEmailHtml(code));
+  // Send email in background without waiting
+  sendEmail({
+    to: email,
+    subject: 'Your Verification Code',
+    html: getVerificationEmailHtml(code)
+  }).catch(err => {
+    console.error('[EMAIL BACKGROUND ERROR]', err.message);
+  });
 
-  return { message: 'OTP sent to email' };
+  // Return immediately without waiting for email
+  return { message: 'OTP sent to email', code }; // Include code for testing
 }
 
 export async function verifyOtp(email: string, code: string) {

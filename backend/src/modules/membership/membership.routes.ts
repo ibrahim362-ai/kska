@@ -14,6 +14,6 @@ router.put('/:id', authenticate, authorize('ADMIN'), validate(updateMembershipSc
 
 router.post('/purchase', authenticate, validate(purchaseMembershipSchema), membershipController.purchaseMembership);
 router.get('/my-memberships', authenticate, membershipController.getUserMemberships);
-router.get('/all-users', authenticate, authorize('ADMIN'), membershipController.getAllUserMemberships);
+router.get('/users', authenticate, authorize('ADMIN'), membershipController.getAllUserMemberships);
 
 export default router;

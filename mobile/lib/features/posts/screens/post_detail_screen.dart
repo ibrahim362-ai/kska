@@ -274,7 +274,7 @@ class _PostDetailScreenState extends ConsumerState<PostDetailScreen> {
                           physics: const NeverScrollableScrollPhysics(),
                           padding: const EdgeInsets.symmetric(horizontal: 16),
                           itemCount: _comments.length,
-                          separatorBuilder: (_, __) =>
+                          separatorBuilder: (_, _) =>
                               const Divider(height: 24),
                           itemBuilder: (context, index) {
                             final comment = _comments[index];

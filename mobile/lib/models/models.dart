@@ -9,6 +9,7 @@ class User {
   final String role;
   final bool isVerified;
   final bool isBanned;
+  final int icons;
   final DateTime createdAt;
 
   User({
@@ -22,6 +23,7 @@ class User {
     required this.role,
     required this.isVerified,
     required this.isBanned,
+    this.icons = 0,
     required this.createdAt,
   });
 
@@ -36,6 +38,7 @@ class User {
     role: json['role'],
     isVerified: json['isVerified'] ?? false,
     isBanned: json['isBanned'] ?? false,
+    icons: json['icons'] ?? 0,
     createdAt: json['createdAt'] != null
         ? DateTime.parse(json['createdAt'])
         : DateTime.now(),
@@ -52,6 +55,7 @@ class User {
     String? role,
     bool? isVerified,
     bool? isBanned,
+    int? icons,
     DateTime? createdAt,
   }) {
     return User(
@@ -65,6 +69,7 @@ class User {
       role: role ?? this.role,
       isVerified: isVerified ?? this.isVerified,
       isBanned: isBanned ?? this.isBanned,
+      icons: icons ?? this.icons,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -151,8 +156,11 @@ class Vote {
   final DateTime startsAt;
   final DateTime endsAt;
   final bool isActive;
+  final bool isLive;
   final int totalVotes;
   final List<VoteOption> options;
+  final bool hasVoted;
+  final String? userVotedOptionId;
 
   Vote({
     required this.id,
@@ -162,8 +170,11 @@ class Vote {
     required this.startsAt,
     required this.endsAt,
     required this.isActive,
+    required this.isLive,
     required this.totalVotes,
     required this.options,
+    this.hasVoted = false,
+    this.userVotedOptionId,
   });
 
   factory Vote.fromJson(Map<String, dynamic> json) => Vote(
@@ -174,11 +185,44 @@ class Vote {
     startsAt: DateTime.parse(json['startsAt']),
     endsAt: DateTime.parse(json['endsAt']),
     isActive: json['isActive'] ?? false,
+    isLive: json['isLive'] ?? false,
     totalVotes: json['totalVotes'] ?? 0,
+    hasVoted: json['hasVoted'] ?? false,
+    userVotedOptionId: json['userVotedOptionId'],
     options: (json['options'] as List)
         .map((o) => VoteOption.fromJson(o))
         .toList(),
   );
+
+  Vote copyWith({
+    String? id,
+    String? title,
+    String? description,
+    String? voteType,
+    DateTime? startsAt,
+    DateTime? endsAt,
+    bool? isActive,
+    bool? isLive,
+    int? totalVotes,
+    List<VoteOption>? options,
+    bool? hasVoted,
+    String? userVotedOptionId,
+  }) {
+    return Vote(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      description: description ?? this.description,
+      voteType: voteType ?? this.voteType,
+      startsAt: startsAt ?? this.startsAt,
+      endsAt: endsAt ?? this.endsAt,
+      isActive: isActive ?? this.isActive,
+      isLive: isLive ?? this.isLive,
+      totalVotes: totalVotes ?? this.totalVotes,
+      options: options ?? this.options,
+      hasVoted: hasVoted ?? this.hasVoted,
+      userVotedOptionId: userVotedOptionId ?? this.userVotedOptionId,
+    );
+  }
 }
 
 class VoteOption {
@@ -199,32 +243,47 @@ class Membership {
   final String id;
   final String name;
   final String planType;
+  final int level;
   final double price;
+  final int pointsReward;
   final int duration;
   final int extraVotes;
   final bool priorityTicket;
   final double leaderboardBoost;
+  final bool vipSeat;
+  final bool challengeAccess;
+  final bool communityAccess;
 
   Membership({
     required this.id,
     required this.name,
     required this.planType,
+    required this.level,
     required this.price,
+    required this.pointsReward,
     required this.duration,
     required this.extraVotes,
     required this.priorityTicket,
     required this.leaderboardBoost,
+    required this.vipSeat,
+    required this.challengeAccess,
+    required this.communityAccess,
   });
 
   factory Membership.fromJson(Map<String, dynamic> json) => Membership(
     id: json['id'],
     name: json['name'],
     planType: json['planType'],
+    level: json['level'] ?? 0,
     price: (json['price'] ?? 0).toDouble(),
+    pointsReward: json['pointsReward'] ?? 0,
     duration: json['duration'] ?? 30,
     extraVotes: json['extraVotes'] ?? 0,
     priorityTicket: json['priorityTicket'] ?? false,
     leaderboardBoost: (json['leaderboardBoost'] ?? 1.0).toDouble(),
+    vipSeat: json['vipSeat'] ?? false,
+    challengeAccess: json['challengeAccess'] ?? false,
+    communityAccess: json['communityAccess'] ?? false,
   );
 }
 
@@ -232,7 +291,15 @@ class TicketModel {
   final String id;
   final String title;
   final String? description;
+  final String? coverImage;
   final double price;
+  final double? vipPrice;
+  final bool hasVipOption;
+  final int vipPoints;
+  final double discount;
+  final bool familyTicket;
+  final int? maxFamilyMembers;
+  final int pointsReward;
   final int quantity;
   final int soldCount;
   final DateTime eventDate;
@@ -243,7 +310,15 @@ class TicketModel {
     required this.id,
     required this.title,
     this.description,
+    this.coverImage,
     required this.price,
+    this.vipPrice,
+    required this.hasVipOption,
+    required this.vipPoints,
+    required this.discount,
+    required this.familyTicket,
+    this.maxFamilyMembers,
+    required this.pointsReward,
     required this.quantity,
     required this.soldCount,
     required this.eventDate,
@@ -255,7 +330,15 @@ class TicketModel {
     id: json['id'],
     title: json['title'],
     description: json['description'],
+    coverImage: json['coverImage'],
     price: (json['price'] ?? 0).toDouble(),
+    vipPrice: json['vipPrice'] != null ? (json['vipPrice'] as num).toDouble() : null,
+    hasVipOption: json['hasVipOption'] ?? false,
+    vipPoints: json['vipPoints'] ?? 30,
+    discount: (json['discount'] ?? 0).toDouble(),
+    familyTicket: json['familyTicket'] ?? false,
+    maxFamilyMembers: json['maxFamilyMembers'],
+    pointsReward: json['pointsReward'] ?? 0,
     quantity: json['quantity'] ?? 0,
     soldCount: json['soldCount'] ?? 0,
     eventDate: DateTime.parse(json['eventDate']),
@@ -409,3 +492,58 @@ class ManualPaymentProof {
     createdAt: DateTime.parse(json['createdAt']),
   );
 }
+
+// ====================================================================
+// Icons System
+// ====================================================================
+
+class IconTransaction {
+  final String id;
+  final String userId;
+  final int amount;
+  final String type;
+  final String description;
+  final Map<String, dynamic>? metadata;
+  final DateTime createdAt;
+
+  IconTransaction({
+    required this.id,
+    required this.userId,
+    required this.amount,
+    required this.type,
+    required this.description,
+    this.metadata,
+    required this.createdAt,
+  });
+
+  factory IconTransaction.fromJson(Map<String, dynamic> json) => IconTransaction(
+    id: json['id'],
+    userId: json['userId'],
+    amount: json['amount'],
+    type: json['type'],
+    description: json['description'],
+    metadata: json['metadata'] != null ? Map<String, dynamic>.from(json['metadata']) : null,
+    createdAt: DateTime.parse(json['createdAt']),
+  );
+
+  bool get isPositive => amount > 0;
+  bool get isNegative => amount < 0;
+  
+  String get typeLabel {
+    switch (type) {
+      case 'SIGNUP':
+        return 'Welcome Bonus';
+      case 'TICKET_PURCHASE':
+        return 'Ticket Purchase';
+      case 'CHECKIN':
+        return 'Event Check-in';
+      case 'REFERRAL':
+        return 'Referral Bonus';
+      case 'MANUAL':
+        return 'Manual Adjustment';
+      default:
+        return type;
+    }
+  }
+}
+

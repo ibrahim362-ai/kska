@@ -3,6 +3,7 @@ import * as ticketController from './ticket.controller';
 import { authenticate } from '../../middleware/auth';
 import { authorize } from '../../middleware/role';
 import { validate } from '../../middleware/validate';
+import { upload } from '../../middleware/upload';
 import { createTicketSchema, updateTicketSchema, purchaseTicketSchema, checkInTicketSchema, ticketQuerySchema } from '../../validations/ticket';
 
 const router = Router();
@@ -14,10 +15,10 @@ router.get('/check-ins', authenticate, ticketController.getMyCheckIns);
 router.get('/refunds/list', authenticate, authorize('ADMIN'), ticketController.getRefunds);
 router.get('/transfers/list', authenticate, ticketController.getTransfers);
 
-router.post('/', authenticate, validate(createTicketSchema), ticketController.createTicket);
+router.post('/', authenticate, upload.single('coverImage'), ticketController.createTicket);
 
 router.get('/:id', authenticate, ticketController.getTicketById);
-router.put('/:id', authenticate, validate(updateTicketSchema), ticketController.updateTicket);
+router.put('/:id', authenticate, upload.single('coverImage'), ticketController.updateTicket);
 router.delete('/:id', authenticate, ticketController.deleteTicket);
 
 router.post('/purchase', authenticate, validate(purchaseTicketSchema), ticketController.purchaseTicket);

@@ -14,7 +14,11 @@ export async function createVote(req: AuthRequest, res: Response, next: NextFunc
 
 export async function getVotes(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const result = await voteService.getVotes(req.query as any);
+    const query = {
+      ...(req.query as any),
+      userId: req.user?.userId, // Add userId from authenticated user
+    };
+    const result = await voteService.getVotes(query);
     sendSuccess({ res, data: result.data, meta: result.meta });
   } catch (error) {
     next(error);

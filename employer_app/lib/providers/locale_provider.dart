@@ -8,26 +8,18 @@ const supportedLocales = [
   Locale('om'),
 ];
 
-final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>((ref) => LocaleNotifier());
+// Simple provider for locale - no StateProvider needed
+final localeProvider = Provider<Locale>((ref) => const Locale('en'));
 
-class LocaleNotifier extends StateNotifier<Locale> {
-  LocaleNotifier() : super(const Locale('en')) {
-    _load();
-  }
+Future<Locale> loadSavedLocale() async {
+  final prefs = await SharedPreferences.getInstance();
+  final code = prefs.getString('employer_app_locale');
+  return code != null ? Locale(code) : const Locale('en');
+}
 
-  static const _key = 'employer_app_locale';
-
-  Future<void> _load() async {
-    final prefs = await SharedPreferences.getInstance();
-    final code = prefs.getString(_key);
-    if (code != null) state = Locale(code);
-  }
-
-  Future<void> set(Locale locale) async {
-    state = locale;
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_key, locale.languageCode);
-  }
+Future<void> saveLocale(Locale locale) async {
+  final prefs = await SharedPreferences.getInstance();
+  await prefs.setString('employer_app_locale', locale.languageCode);
 }
 
 String localeDisplayName(Locale locale) {

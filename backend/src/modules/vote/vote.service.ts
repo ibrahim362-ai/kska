@@ -9,6 +9,7 @@ export async function createVote(creatorId: string, data: {
   startsAt: string;
   endsAt: string;
   options: { text: string; imageUrl?: string }[];
+  isLive?: boolean;
 }) {
   const vote = await prisma.vote.create({
     data: {
@@ -18,6 +19,7 @@ export async function createVote(creatorId: string, data: {
       voteType: data.voteType,
       startsAt: new Date(data.startsAt),
       endsAt: new Date(data.endsAt),
+      isLive: data.isLive !== undefined ? data.isLive : true, // Default to true if not specified
       options: {
         create: data.options.map((opt, idx) => ({
           text: opt.text,
@@ -42,6 +44,7 @@ export async function getVotes(query: {
   creatorId?: string;
   sortBy: string;
   sortOrder: string;
+  userId?: string; // Add userId parameter
 }) {
   const where: any = {};
   if (query.isActive !== undefined) where.isActive = query.isActive;
@@ -51,7 +54,6 @@ export async function getVotes(query: {
   const votes = await prisma.vote.findMany({
     where: {
       ...where,
-      isLive: true,
     },
     skip: (query.page - 1) * query.limit,
     take: query.limit,
@@ -62,13 +64,37 @@ export async function getVotes(query: {
     },
   });
 
-  const total = await prisma.vote.count({ where: { ...where, isLive: true } });
+  const total = await prisma.vote.count({ where: { ...where } });
+
+  // For each vote, check if the user has voted
+  const votesWithUserStatus = await Promise.all(
+    votes.map(async (v) => {
+      let hasVoted = false;
+      let userVotedOptionId = null;
+
+      if (query.userId) {
+        const record = await prisma.voteRecord.findFirst({
+          where: { voteId: v.id, userId: query.userId },
+          select: { optionId: true },
+          orderBy: { createdAt: 'desc' },
+        });
+        if (record) {
+          hasVoted = true;
+          userVotedOptionId = record.optionId;
+        }
+      }
+
+      return {
+        ...v,
+        isActive: v.isActive && new Date(v.endsAt) > now,
+        hasVoted,
+        userVotedOptionId,
+      };
+    })
+  );
 
   return {
-    data: votes.map((v) => ({
-      ...v,
-      isActive: v.isActive && new Date(v.endsAt) > now,
-    })),
+    data: votesWithUserStatus,
     meta: { page: query.page, limit: query.limit, total, totalPages: Math.ceil(total / query.limit) },
   };
 }
@@ -77,24 +103,63 @@ export async function getVoteById(id: string, userId?: string) {
   const vote = await prisma.vote.findUnique({
     where: { id },
     include: {
-        creator: { select: { id: true, email: true, username: true, fullName: true, avatar: true, role: true } },
+      creator: { select: { id: true, email: true, username: true, fullName: true, avatar: true, role: true } },
       options: { orderBy: { sortOrder: 'asc' }, select: { id: true, text: true, imageUrl: true, voteCount: true } },
       _count: { select: { records: true } },
+      records: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              email: true,
+              username: true,
+              fullName: true,
+              avatar: true,
+              role: true,
+            },
+          },
+        },
+        orderBy: { createdAt: 'desc' },
+      },
     },
   });
 
   if (!vote) throw new NotFoundError('Vote not found');
 
   let userVote = null;
+  let hasVoted = false;
+  let userVotedOptionId = null;
+  
   if (userId) {
-    const record = await prisma.voteRecord.findUnique({
-      where: { voteId_userId: { voteId: id, userId } },
+    const record = await prisma.voteRecord.findFirst({
+      where: { voteId: id, userId },
       select: { optionId: true },
+      orderBy: { createdAt: 'desc' },
     });
-    userVote = record?.optionId;
+    if (record) {
+      userVote = record.optionId;
+      hasVoted = true;
+      userVotedOptionId = record.optionId;
+    }
   }
 
-  return { ...vote, userVote, isActive: vote.isActive && new Date(vote.endsAt) > new Date() };
+  // Map voters to simpler format
+  const voters = vote.records.map((record) => ({
+    id: record.id,
+    user: record.user,
+    optionId: record.optionId,
+    createdAt: record.createdAt,
+  }));
+
+  return { 
+    ...vote, 
+    userVote, 
+    hasVoted,
+    userVotedOptionId,
+    isActive: vote.isActive && new Date(vote.endsAt) > new Date(),
+    totalVotes: vote._count.records,
+    voters,
+  };
 }
 
 export async function castVote(userId: string, voteId: string, optionId: string, ipAddress: string) {

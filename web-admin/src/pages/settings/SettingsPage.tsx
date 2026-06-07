@@ -8,7 +8,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState<'account' | 'platform'>('account');
 
   const [settings, setSettings] = useState({
-    appName: 'Community Hub',
+    appName: 'KSKA',
     registrationOpen: 'true',
     maintenanceMode: 'false',
     maxPostsPerDay: '50',
@@ -20,7 +20,7 @@ export default function SettingsPage() {
     api.get('/settings').then((res) => {
       const data = res.data.data;
       setSettings({
-        appName: data.appName || 'Community Hub',
+        appName: data.appName || 'KSKA',
         registrationOpen: data.registrationOpen || 'true',
         maintenanceMode: data.maintenanceMode || 'false',
         maxPostsPerDay: data.maxPostsPerDay || '50',

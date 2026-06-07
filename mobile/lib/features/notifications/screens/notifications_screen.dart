@@ -248,8 +248,7 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
             Text(n.message, maxLines: 2, overflow: TextOverflow.ellipsis),
             const SizedBox(height: 2),
             Text(
-              timeago.format(n.createdAt, locale: 'en') + ' · ' +
-                  DateFormat.MMMd().add_jm().format(n.createdAt),
+              '${timeago.format(n.createdAt, locale: 'en')} · ${DateFormat.MMMd().add_jm().format(n.createdAt)}',
               style: TextStyle(fontSize: 11, color: Colors.grey.shade500),
             ),
           ],

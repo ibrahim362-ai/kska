@@ -30,6 +30,13 @@ class NotificationService {
   Future<void> initialize() async {
     if (_initialized) return;
     try {
+      // Skip Firebase on web for now
+      if (kIsWeb) {
+        if (kDebugMode) print('Skipping Firebase on web');
+        _initialized = true;
+        return;
+      }
+      
       await Firebase.initializeApp();
       FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
       await _requestPermissions();
@@ -54,6 +61,7 @@ class NotificationService {
       _initialized = true;
     } catch (e) {
       if (kDebugMode) print('NotificationService init failed: $e');
+      _initialized = true; // Mark as initialized even if failed
     }
   }
 

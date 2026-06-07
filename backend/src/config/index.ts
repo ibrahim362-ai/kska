@@ -24,7 +24,7 @@ export const config = {
     port: parseInt(process.env.SMTP_PORT || '587', 10),
     user: process.env.SMTP_USER || '',
     pass: process.env.SMTP_PASS || '',
-    from: process.env.SMTP_FROM || 'Community Hub <noreply@localhost>',
+    from: process.env.SMTP_FROM || 'KSKA <noreply@localhost>',
   },
 
   manualPayment: {
@@ -33,13 +33,9 @@ export const config = {
       'Pay the exact amount to one of the accounts below, then upload your payment receipt (screenshot or PDF).',
     bankName: process.env.MANUAL_PAYMENT_BANK_NAME || 'Commercial Bank of Ethiopia',
     accountNumber: process.env.MANUAL_PAYMENT_ACCOUNT_NUMBER || '1000000000000',
-    accountHolder: process.env.MANUAL_PAYMENT_ACCOUNT_HOLDER || 'Community Hub PLC',
+    accountHolder: process.env.MANUAL_PAYMENT_ACCOUNT_HOLDER || 'KSKA PLC',
     telebirrNumber: process.env.MANUAL_PAYMENT_TELEBIRR_NUMBER || '0911000000',
     awashAccount: process.env.MANUAL_PAYMENT_AWASH_ACCOUNT || '0130000000000',
-  },
-
-  redis: {
-    url: process.env.REDIS_URL || 'redis://localhost:6379',
   },
 
   sentry: {
@@ -52,7 +48,7 @@ export const config = {
 
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:5173',
   backendUrl: process.env.BACKEND_URL || 'http://localhost:5000',
-  mobileDeepLinkScheme: process.env.MOBILE_DEEP_LINK_SCHEME || 'communityhub',
+  mobileDeepLinkScheme: process.env.MOBILE_DEEP_LINK_SCHEME || 'kska',
 };
 
 export const isProd = config.nodeEnv === 'production';

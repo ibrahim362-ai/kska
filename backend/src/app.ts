@@ -29,6 +29,8 @@ import uploadRoutes from './modules/upload/upload.routes';
 import settingsRoutes from './modules/settings/settings.routes';
 import employerRoutes from './modules/employer/employer.routes';
 import adminRoutes from './modules/admin/admin.routes';
+import iconRoutes from './modules/icon/icon.routes';
+import challengeRoutes from './modules/challenge/challenge.routes';
 
 const app = express();
 
@@ -96,6 +98,8 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/settings', settingsRoutes);
 app.use('/api/employer', employerRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/icons', iconRoutes);
+app.use('/api/challenges', challengeRoutes);
 
 app.get('/api/health', basicHealth);
 app.get('/api/health/deep', deepHealth);

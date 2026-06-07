@@ -53,7 +53,15 @@ export interface Ticket {
   id: string;
   title: string;
   description?: string;
+  coverImage?: string;
   price: number;
+  vipPrice?: number;
+  hasVipOption: boolean;
+  vipPoints: number;
+  discount: number;
+  familyTicket: boolean;
+  maxFamilyMembers?: number;
+  pointsReward: number;
   quantity: number;
   soldCount: number;
   eventDate: string;
@@ -66,12 +74,17 @@ export interface Membership {
   id: string;
   name: string;
   planType: string;
+  level: number;
   price: number;
+  pointsReward: number;
   duration: number;
   badgeIcon?: string;
   extraVotes: number;
   priorityTicket: boolean;
   leaderboardBoost: number;
+  vipSeat: boolean;
+  challengeAccess: boolean;
+  communityAccess: boolean;
   isActive: boolean;
 }
 
@@ -96,6 +109,7 @@ export interface ManualPaymentProof {
   senderName: string;
   senderPhone?: string;
   transactionRef?: string;
+  paymentMethod?: string;
   paidAt: string;
   notes?: string;
   status: 'PENDING' | 'APPROVED' | 'REJECTED';
@@ -104,7 +118,7 @@ export interface ManualPaymentProof {
   reviewedAt?: string;
   createdAt: string;
   payment: Payment;
-  user: Pick<User, 'id' | 'fullName' | 'email' | 'phone'>;
+  user: Pick<User, 'id' | 'fullName' | 'email' | 'phone' | 'username'>;
   reviewer?: Pick<User, 'id' | 'fullName' | 'email'>;
 }
 

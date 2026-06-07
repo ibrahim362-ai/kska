@@ -1,30 +1,14 @@
-import { Queue, Worker, QueueEvents, ConnectionOptions } from 'bullmq';
-import IORedis, { Redis } from 'ioredis';
-import { config, isTest } from '../config';
-import { logger } from '../utils/logger';
+// Queue system disabled - Redis not required
+// Background jobs will run synchronously when called
 
-let connection: Redis | null = null;
-
-export function getConnection(): Redis {
-  if (!connection) {
-    connection = new IORedis(config.redis.url, {
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      lazyConnect: !isTest,
-    });
-    connection.on('connect', () => logger.info('Redis connected'));
-    connection.on('error', (err) => logger.error('Redis error', { message: err.message }));
-  }
-  return connection;
+export function getConnection() {
+  return null;
 }
 
-export function getConnectionOptions(): ConnectionOptions {
-  return { connection: getConnection() };
+export function getConnectionOptions() {
+  return null;
 }
 
-// =====================================================================
-// Queue names
-// =====================================================================
 export const QUEUE_NAMES = {
   EMAIL: 'email',
   PUSH_NOTIFICATION: 'push-notification',
@@ -32,77 +16,23 @@ export const QUEUE_NAMES = {
   MANUAL_PAYMENT_REMINDER: 'manual-payment-reminder',
 } as const;
 
-// =====================================================================
-// Singleton queue registry
-// =====================================================================
-const queues = new Map<string, Queue>();
-
-export function getQueue(name: string): Queue {
-  if (!queues.has(name)) {
-    queues.set(
-      name,
-      new Queue(name, {
-        connection: getConnection(),
-        defaultJobOptions: {
-          attempts: 3,
-          backoff: { type: 'exponential', delay: 1000 },
-          removeOnComplete: { count: 100, age: 24 * 3600 },
-          removeOnFail: { count: 500, age: 7 * 24 * 3600 },
-        },
-      })
-    );
-  }
-  return queues.get(name)!;
+export function getQueue(_name: string) {
+  return null;
 }
 
-// =====================================================================
-// Job helpers
-// =====================================================================
-export const emailQueue = () => getQueue(QUEUE_NAMES.EMAIL);
-export const pushQueue = () => getQueue(QUEUE_NAMES.PUSH_NOTIFICATION);
-export const leaderboardQueue = () => getQueue(QUEUE_NAMES.LEADERBOARD_RECOMPUTE);
+export const emailQueue = () => null;
+export const pushQueue = () => null;
+export const leaderboardQueue = () => null;
 
-// =====================================================================
-// Worker registry
-// =====================================================================
-const workers: Worker[] = [];
-
-export function registerWorker(name: string, processor: (job: any) => Promise<any>): Worker {
-  const worker = new Worker(name, processor, { connection: getConnection() });
-  worker.on('completed', (job) => logger.info(`Job ${name}#${job.id} completed`));
-  worker.on('failed', (job, err) =>
-    logger.error(`Job ${name}#${job?.id} failed`, { message: err.message })
-  );
-  workers.push(worker);
-  return worker;
+export function registerWorker(_name: string, _processor: (job: any) => Promise<any>) {
+  // No workers without Redis
+  return null;
 }
 
-// =====================================================================
-// Lifecycle
-// =====================================================================
 export async function startWorkers() {
-  if (isTest) return; // Don't start workers in tests
-
-  // Email worker
-  const { processEmailJob } = await import('../jobs/email.job');
-  registerWorker(QUEUE_NAMES.EMAIL, processEmailJob);
-
-  // Push notification worker
-  const { processPushJob } = await import('../jobs/push.job');
-  registerWorker(QUEUE_NAMES.PUSH_NOTIFICATION, processPushJob);
-
-  // Leaderboard recompute
-  const { processLeaderboardJob } = await import('../jobs/leaderboard.job');
-  registerWorker(QUEUE_NAMES.LEADERBOARD_RECOMPUTE, processLeaderboardJob);
-
-  logger.info(`Started ${workers.length} background workers`);
+  // No workers to start
 }
 
 export async function closeAllQueues() {
-  await Promise.all(workers.map((w) => w.close()));
-  await Promise.all(Array.from(queues.values()).map((q) => q.close()));
-  if (connection) await connection.quit();
-  workers.length = 0;
-  queues.clear();
-  connection = null;
+  // No queues to close
 }

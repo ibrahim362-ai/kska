@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import api from '../../services/api';
 import type { Vote } from '../../types';
-import { Clock, CheckCircle, XCircle, BarChart3, Trash2, Plus, X, Edit, Power } from 'lucide-react';
+import { Clock, CheckCircle, XCircle, BarChart3, Trash2, Plus, X, Edit, Power, Eye } from 'lucide-react';
 
 export default function VotesPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [form, setForm] = useState({ title: '', description: '', voteType: 'FREE_VOTE', startsAt: '', endsAt: '', options: ['', ''] });
@@ -20,7 +22,13 @@ export default function VotesPage() {
   });
 
   const createMutation = useMutation({
-    mutationFn: (body: any) => api.post('/votes', { ...body, options: body.options.filter((o: string) => o).map((t: string) => ({ text: t })), startsAt: new Date(body.startsAt).toISOString(), endsAt: new Date(body.endsAt).toISOString() }),
+    mutationFn: (body: any) => api.post('/votes', { 
+      ...body, 
+      options: body.options.filter((o: string) => o).map((t: string) => ({ text: t })), 
+      startsAt: new Date(body.startsAt).toISOString(), 
+      endsAt: new Date(body.endsAt).toISOString(),
+      isLive: true, // Automatically set to live when created
+    }),
     onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['votes'] }); setShowCreate(false); setForm({ title: '', description: '', voteType: 'FREE_VOTE', startsAt: '', endsAt: '', options: ['', ''] }); setCreateError(''); },
     onError: (err: any) => { setCreateError(err?.response?.data?.message || 'Failed to create vote'); },
   });
@@ -43,7 +51,7 @@ export default function VotesPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Votes</h1>
-          <p className="text-gray-500 mt-1">Manage community voting polls</p>
+          <p className="text-gray-500 mt-1">Manage KSKA voting polls</p>
         </div>
         <button onClick={() => setShowCreate(true)} className="bg-gradient-to-r from-indigo-600 to-purple-600 text-white px-5 py-2.5 rounded-xl flex items-center gap-2 hover:from-indigo-700 hover:to-purple-700 text-sm font-medium shadow-lg hover:shadow-xl transition-all">
           <Plus size={18} /> Create Vote
@@ -136,6 +144,10 @@ export default function VotesPage() {
                   <td className="px-6 py-4"><div className="flex items-center gap-2"><div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center shadow-md"><span className="text-white font-bold text-sm">{vote.totalVotes}</span></div><span className="text-xs text-gray-500">votes</span></div></td>
                   <td className="px-6 py-4"><div className="flex items-center gap-2 text-sm text-gray-600"><Clock size={16} className="text-orange-500" />{new Date(vote.endsAt).toLocaleDateString()}</div></td>
                   <td className="px-6 py-4"><div className="flex items-center justify-end gap-2">
+                    <button onClick={() => navigate(`/votes/${vote.id}`)}
+                      className="p-2 rounded-xl hover:bg-indigo-50 text-indigo-600 transition-all" title="View Details">
+                      <Eye size={16} />
+                    </button>
                     <button onClick={() => toggleMutation.mutate({ id: vote.id, isLive: vote.isActive })}
                       className={`p-2 rounded-xl transition-all ${vote.isActive ? 'hover:bg-green-50 text-green-600' : 'hover:bg-indigo-50 text-indigo-600'}`} title={vote.isActive ? 'Deactivate' : 'Activate'}>
                       <Power size={16} />

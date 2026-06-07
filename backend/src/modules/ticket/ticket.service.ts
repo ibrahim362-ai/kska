@@ -3,24 +3,41 @@ import crypto from 'crypto';
 import prisma from '../../config/prisma';
 import { NotFoundError, ForbiddenError, BadRequestError, ConflictError } from '../../utils/errors';
 import { emitTicketCheckIn } from '../../socket/socket';
+import { IconService } from '../../services/icon.service';
 
 export async function createTicket(creatorId: string, data: {
   title: string;
   description?: string;
+  coverImage?: string;
   price: number;
   quantity: number;
   eventDate: string;
   location?: string;
+  hasVipOption?: boolean;
+  vipPrice?: number;
+  vipPoints?: number;
+  familyTicket?: boolean;
+  maxFamilyMembers?: number;
+  discount?: number;
+  pointsReward?: number;
 }) {
   const ticket = await prisma.ticket.create({
     data: {
       creatorId,
       title: data.title,
       description: data.description,
+      coverImage: data.coverImage,
       price: data.price,
       quantity: data.quantity,
       eventDate: new Date(data.eventDate),
       location: data.location,
+      hasVipOption: data.hasVipOption || false,
+      vipPrice: data.vipPrice,
+      vipPoints: data.vipPoints || 30,
+      familyTicket: data.familyTicket || false,
+      maxFamilyMembers: data.maxFamilyMembers,
+      discount: data.discount || 0,
+      pointsReward: data.pointsReward || 0,
     },
     include: {
       creator: { select: { id: true, username: true, fullName: true } },
@@ -108,10 +125,76 @@ export async function deleteTicket(id: string, userId: string) {
   await prisma.ticket.delete({ where: { id } });
 }
 
-export async function purchaseTicket(userId: string, ticketId: string) {
+export async function purchaseTicket(
+  userId: string, 
+  ticketId: string, 
+  referralCode?: string,
+  options?: {
+    isVip?: boolean;
+    isGift?: boolean;
+    recipientName?: string;
+    recipientPhone?: string;
+    recipientEmail?: string;
+    familyMembers?: string; // JSON string
+  }
+) {
   const ticket = await prisma.ticket.findUnique({ where: { id: ticketId } });
   if (!ticket) throw new NotFoundError('Ticket not found');
   if (ticket.status !== 'ACTIVE') throw new BadRequestError('Ticket is not available');
+
+  const isVip = options?.isVip || false;
+  const isGift = options?.isGift || false;
+
+  // Validate VIP option
+  if (isVip && !ticket.hasVipOption) {
+    throw new BadRequestError('VIP option not available for this ticket');
+  }
+
+  // Parse and validate family members
+  let familyMembersArray: string[] = [];
+  if (options?.familyMembers && ticket.familyTicket) {
+    try {
+      familyMembersArray = JSON.parse(options.familyMembers);
+      if (ticket.maxFamilyMembers && familyMembersArray.length > ticket.maxFamilyMembers) {
+        throw new BadRequestError(`Maximum ${ticket.maxFamilyMembers} family members allowed`);
+      }
+      if (familyMembersArray.length === 0) {
+        throw new BadRequestError('Family ticket requires at least 1 family member');
+      }
+    } catch (e) {
+      throw new BadRequestError('Invalid family members format');
+    }
+  }
+
+  // Calculate final price with discount and family members
+  let basePrice = isVip ? (ticket.vipPrice || ticket.price) : ticket.price;
+  
+  // For family tickets, multiply by number of family members
+  if (ticket.familyTicket && familyMembersArray.length > 0) {
+    basePrice = basePrice * familyMembersArray.length;
+  }
+  
+  const finalPrice = ticket.discount > 0 
+    ? basePrice * (1 - ticket.discount / 100)
+    : basePrice;
+
+  // Validate referral code if provided
+  let referrerId: string | undefined;
+  if (referralCode) {
+    const referrerPurchase = await prisma.ticketPurchase.findUnique({
+      where: { referralCode },
+      select: { userId: true },
+    });
+    
+    if (referrerPurchase) {
+      // Cannot use own referral code
+      if (referrerPurchase.userId === userId) {
+        throw new BadRequestError('Cannot use your own referral code');
+      }
+      referrerId = referrerPurchase.userId;
+    }
+    // If code not found, silently ignore (don't block purchase)
+  }
 
   const userMembership = await prisma.userMembership.findFirst({
     where: {
@@ -132,43 +215,112 @@ export async function purchaseTicket(userId: string, ticketId: string) {
     throw new BadRequestError('Ticket sold out (including priority allocation)');
   }
 
+  // Check if user already has an active purchase (PAID or PENDING)
   const existing = await prisma.ticketPurchase.findFirst({
-    where: { userId, ticketId, status: 'PAID' },
+    where: { 
+      userId, 
+      ticketId, 
+      status: { in: ['PAID', 'PENDING'] }  // Check both PAID and PENDING
+    },
   });
-  if (existing) throw new ConflictError('You already purchased this ticket');
+  if (existing) {
+    if (existing.status === 'PENDING') {
+      throw new ConflictError('You have a pending purchase for this ticket. Please complete the payment or wait for approval.');
+    }
+    throw new ConflictError('You already purchased this ticket');
+  }
+
+  // Generate unique referral code for this purchase
+  const newReferralCode = `REF-${crypto.randomUUID().slice(0, 8).toUpperCase()}`;
+
+  // Calculate points to award
+  const pointsAwarded = isVip ? ticket.vipPoints : ticket.pointsReward;
 
   const purchase = await prisma.ticketPurchase.create({
     data: {
       ticketId,
       userId,
-      status: ticket.price > 0 ? 'PENDING' : 'PAID',
+      status: finalPrice > 0 ? 'PENDING' : 'PAID',
       seatNumber: `A${ticket.soldCount + 1}`,
+      referralCode: newReferralCode,
+      referredBy: referrerId,
+      isVip,
+      isGift,
+      recipientName: options?.recipientName,
+      recipientPhone: options?.recipientPhone,
+      recipientEmail: options?.recipientEmail,
+      familyMembers: options?.familyMembers,
+      finalPrice,
+      pointsAwarded: 0, // Will be awarded after payment completion
     },
     include: { ticket: true },
   });
 
-  if (ticket.price > 0) {
+  let payment = null;
+  if (finalPrice > 0) {
     const reference = `TKT-${crypto.randomUUID().slice(0, 12).toUpperCase()}`;
-    await prisma.payment.create({
+    payment = await prisma.payment.create({
       data: {
         userId,
-        amount: ticket.price,
+        amount: finalPrice,
         currency: 'ETB',
         method: 'MANUAL',
         status: 'PENDING',
         reference,
-        metadata: JSON.stringify({ type: 'TICKET', purchaseId: purchase.id, ticketId }),
+        ticketPurchaseId: purchase.id,
+        metadata: JSON.stringify({ type: 'TICKET', purchaseId: purchase.id, ticketId, isVip, isGift }),
       },
     });
   }
 
-  if (ticket.price === 0) {
+  if (finalPrice === 0) {
     const qrData = await QRCode.toDataURL(`purchase:${purchase.id}`);
-    await prisma.ticketPurchase.update({ where: { id: purchase.id }, data: { qrCode: qrData } });
+    await prisma.ticketPurchase.update({ 
+      where: { id: purchase.id }, 
+      data: { 
+        qrCode: qrData,
+        pointsAwarded 
+      } 
+    });
     await prisma.ticket.update({ where: { id: ticketId }, data: { soldCount: { increment: 1 } } });
+    
+    // Award points for free ticket
+    if (pointsAwarded > 0) {
+      try {
+        await IconService.awardIcons(
+          userId,
+          pointsAwarded,
+          'TICKET_PURCHASE',
+          `Purchased ${isVip ? 'VIP ' : ''}ticket: ${ticket.title}`,
+          { ticketId, purchaseId: purchase.id, isVip }
+        );
+      } catch (error) {
+        console.error('Failed to award ticket purchase points:', error);
+      }
+    }
+    
+    // Award referrer if valid referral code was used
+    if (referrerId) {
+      try {
+        await IconService.awardIcons(
+          referrerId,
+          10,
+          'REFERRAL',
+          'Someone used your referral code',
+          { 
+            referredUserId: userId, 
+            ticketId,
+            purchaseId: purchase.id,
+            referralCode: newReferralCode 
+          }
+        );
+      } catch (error) {
+        console.error('Failed to award referral icons:', error);
+      }
+    }
   }
 
-  return purchase;
+  return { ...purchase, payment };
 }
 
 export async function getUserPurchases(userId: string) {
@@ -209,6 +361,19 @@ export async function checkInTicket(checkerId: string, purchaseId: string) {
     userName: updated.user.fullName,
     checkedInAt: updated.checkedInAt,
   });
+
+  // Award 10 icons for checkin
+  try {
+    await IconService.awardIcons(
+      updated.userId,
+      10,
+      'CHECKIN',
+      `Checked in to: ${updated.ticket.title}`,
+      { ticketId: updated.ticketId, purchaseId: updated.id, ticketTitle: updated.ticket.title }
+    );
+  } catch (error) {
+    console.error('Failed to award checkin icons:', error);
+  }
 
   return updated;
 }

@@ -2,6 +2,7 @@ class TicketModel {
   final String id;
   final String title;
   final String? description;
+  final String? coverImage;
   final double price;
   final int quantity;
   final int soldCount;
@@ -14,6 +15,7 @@ class TicketModel {
     required this.id,
     required this.title,
     this.description,
+    this.coverImage,
     required this.price,
     required this.quantity,
     required this.soldCount,
@@ -27,6 +29,7 @@ class TicketModel {
     id: json['id'],
     title: json['title'],
     description: json['description'],
+    coverImage: json['coverImage'],
     price: (json['price'] ?? 0).toDouble(),
     quantity: json['quantity'] ?? 0,
     soldCount: json['soldCount'] ?? 0,

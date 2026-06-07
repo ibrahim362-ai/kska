@@ -17,6 +17,8 @@ router.post('/fcm-token', userController.registerFcmToken);
 router.delete('/fcm-token', userController.unregisterFcmToken);
 router.put('/:id', authorize('ADMIN'), userController.updateUserByAdmin);
 router.put('/:id/ban', authorize('ADMIN'), validate(banUserSchema), userController.banUser);
+router.post('/:id/add-points', authorize('ADMIN'), userController.addPointsToUser);
+router.get('/:id/transactions', authorize('ADMIN'), userController.getUserTransactions);
 router.delete('/:id', authorize('ADMIN'), userController.deleteUser);
 router.post('/:id/reset-password', authorize('ADMIN'), userController.resetUserPassword);
 

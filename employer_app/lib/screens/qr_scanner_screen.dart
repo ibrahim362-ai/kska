@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'qr_scanner_widget_stub.dart'
   if (dart.library.io) 'qr_scanner_widget_mobile.dart';
-import '../../providers/auth_provider.dart';
-import '../../services/socket_service.dart';
+import '../providers/auth_provider.dart';
+import '../services/socket_service.dart';
+import '../theme/app_theme.dart';
 
 class QrScannerScreen extends ConsumerStatefulWidget {
   const QrScannerScreen({super.key});
@@ -96,7 +98,46 @@ class _QrScannerScreenState extends ConsumerState<QrScannerScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Scan Ticket')),
+      backgroundColor: AppTheme.bgGreen,
+      appBar: AppBar(
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                gradient: AppTheme.primaryGradient,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.qr_code_scanner_rounded, color: Colors.white, size: 24),
+            ),
+            const SizedBox(width: 12),
+            const Text('Scan Ticket'),
+          ],
+        ),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  color: AppTheme.primaryGreen.withOpacity(0.2),
+                  blurRadius: 10,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.logout_rounded, color: AppTheme.primaryGreen),
+              onPressed: () async {
+                await ref.read(authProvider.notifier).logout();
+              },
+              tooltip: 'Logout',
+            ),
+          ),
+        ],
+      ),
       body: QrScannerWidget(
         onScan: _onScanResult,
         manualCtrl: _manualCtrl,

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'config/app_theme.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/auth_provider.dart';
 import 'providers/locale_provider.dart';
@@ -13,13 +14,15 @@ import 'features/home/screens/home_screen.dart';
 import 'features/votes/screens/votes_screen.dart';
 import 'features/tickets/screens/tickets_screen.dart';
 import 'features/tickets/screens/my_tickets_screen.dart';
+import 'features/tickets/screens/ticket_detail_screen.dart';
 import 'features/membership/screens/membership_screen.dart';
 import 'features/leaderboard/screens/leaderboard_screen.dart';
 import 'features/profile/screens/profile_screen.dart';
 import 'features/notifications/screens/notifications_screen.dart';
 import 'features/posts/screens/post_detail_screen.dart';
 import 'features/payments/screens/manual_payment_screen.dart';
-import 'services/socket_service.dart';
+import 'features/icons/screens/icons_screen.dart';
+import 'features/challenges/screens/challenges_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -27,6 +30,7 @@ void main() {
     const SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
     ),
   );
   runApp(const ProviderScope(child: MyApp()));
@@ -38,6 +42,7 @@ class MyApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final locale = ref.watch(localeProvider);
+    
     final router = GoRouter(
       redirect: (context, state) {
         final user = ref.read(authProvider);
@@ -62,12 +67,17 @@ class MyApp extends ConsumerWidget {
               PostDetailScreen(postId: state.pathParameters['id']!),
         ),
         GoRoute(
+          path: '/tickets/:id',
+          builder: (_, state) =>
+              TicketDetailScreen(ticketId: state.pathParameters['id']!),
+        ),
+        GoRoute(
           path: '/my-tickets',
           builder: (_, _) => const MyTicketsScreen(),
         ),
         GoRoute(
           path: '/manual-payment',
-          builder: (_, state) {
+          builder: (context, state) {
             final extra = state.extra as Map<String, dynamic>?;
             return ManualPaymentScreen(
               paymentId: extra?['paymentId'] as String?,
@@ -75,6 +85,14 @@ class MyApp extends ConsumerWidget {
               metadata: extra?['metadata'] as String?,
             );
           },
+        ),
+        GoRoute(
+          path: '/icons',
+          builder: (_, _) => const IconsScreen(),
+        ),
+        GoRoute(
+          path: '/challenges',
+          builder: (_, _) => const ChallengesScreen(),
         ),
         ShellRoute(
           builder: (_, _, child) => MainShell(child: child),
@@ -102,16 +120,8 @@ class MyApp extends ConsumerWidget {
 
     return MaterialApp.router(
       routerConfig: router,
-      theme: ThemeData(
-        colorSchemeSeed: Colors.indigo,
-        useMaterial3: true,
-        brightness: Brightness.light,
-      ),
-      darkTheme: ThemeData(
-        colorSchemeSeed: Colors.indigo,
-        useMaterial3: true,
-        brightness: Brightness.dark,
-      ),
+      theme: AppTheme.lightTheme,
+      themeMode: ThemeMode.light,
       localizationsDelegates: const [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
@@ -143,27 +153,27 @@ class MainShell extends StatelessWidget {
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home),
+            selectedIcon: Icon(Icons.home_rounded),
             label: 'Home',
           ),
           NavigationDestination(
             icon: Icon(Icons.how_to_vote_outlined),
-            selectedIcon: Icon(Icons.how_to_vote),
+            selectedIcon: Icon(Icons.how_to_vote_rounded),
             label: 'Votes',
           ),
           NavigationDestination(
             icon: Icon(Icons.confirmation_number_outlined),
-            selectedIcon: Icon(Icons.confirmation_number),
+            selectedIcon: Icon(Icons.confirmation_number_rounded),
             label: 'Tickets',
           ),
           NavigationDestination(
             icon: Icon(Icons.leaderboard_outlined),
-            selectedIcon: Icon(Icons.leaderboard),
+            selectedIcon: Icon(Icons.leaderboard_rounded),
             label: 'Ranks',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline),
-            selectedIcon: Icon(Icons.person),
+            icon: Icon(Icons.person_outline_rounded),
+            selectedIcon: Icon(Icons.person_rounded),
             label: 'Profile',
           ),
         ],

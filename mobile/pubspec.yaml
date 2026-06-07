@@ -59,6 +59,7 @@ dependencies:
   pull_to_refresh: ^2.0.0
   smooth_page_indicator: ^1.2.1
   timeago: ^3.7.0
+  country_code_picker: ^3.0.0
 
 dev_dependencies:
   flutter_test:
@@ -99,6 +100,7 @@ flutter_native_splash:
 
 # The following section is specific to Flutter packages.
 flutter:
+  generate: true
 
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in

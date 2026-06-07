@@ -3,7 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import {
   LayoutDashboard, Users, FileText, Vote, Ticket, Crown,
-  DollarSign, Flag, Settings, Bell, LogOut, Menu, X, ChevronDown, TrendingUp, Briefcase, Search, Moon, Sun, RotateCcw
+  DollarSign, Flag, Settings, Bell, LogOut, Menu, X, ChevronDown, TrendingUp, Briefcase, Search, Moon, Sun, RotateCcw, Award
 } from 'lucide-react';
 import api from '../services/api';
 import { connectSocket, disconnectSocket, joinUserRoom, joinAdminRoom, leaveAdminRoom, onNotificationNew, isSocketConnected } from '../services/socket';
@@ -15,6 +15,7 @@ const navItems = [
   { to: '/posts', icon: FileText, label: 'Posts', color: 'from-green-500 to-emerald-500' },
   { to: '/votes', icon: Vote, label: 'Votes', color: 'from-orange-500 to-red-500' },
   { to: '/tickets', icon: Ticket, label: 'Tickets', color: 'from-pink-500 to-rose-500' },
+  { to: '/challenges', icon: Award, label: 'Challenges', color: 'from-emerald-500 to-green-500' },
   { to: '/leaderboard', icon: TrendingUp, label: 'Leaderboard', color: 'from-yellow-500 to-orange-500' },
   { to: '/memberships', icon: Crown, label: 'Memberships', color: 'from-amber-500 to-yellow-500' },
   { to: '/payments', icon: DollarSign, label: 'Payments', color: 'from-emerald-500 to-teal-500' },
@@ -31,27 +32,42 @@ export default function AdminLayout() {
   const navigate = useNavigate();
   const location = useLocation();
 
+  // Fetch user info once on mount if not already loaded
   useEffect(() => {
+    let isMounted = true;
+    
     if (!user) {
-      api.get('/auth/me').then((res) => {
-        const userData = res.data.data;
-        setUser(userData);
-        const token = localStorage.getItem('accessToken');
-        if (token) {
-          connectSocket(token);
-          joinUserRoom(userData.id);
-          // Join admin room for real-time notifications
-          if (['ADMIN', 'SUPER_ADMIN'].includes(userData.role)) {
-            joinAdminRoom();
+      api.get('/auth/me')
+        .then((res) => {
+          if (isMounted) {
+            const userData = res.data.data;
+            setUser(userData);
+            const token = localStorage.getItem('accessToken');
+            if (token) {
+              connectSocket(token);
+              joinUserRoom(userData.id);
+              // Join admin room for real-time notifications
+              if (['ADMIN', 'SUPER_ADMIN'].includes(userData.role)) {
+                joinAdminRoom();
+              }
+            }
           }
-        }
-      }).catch(() => {});
+        })
+        .catch(() => {});
     }
+    
+    return () => {
+      isMounted = false;
+    };
+  }, []); // Empty deps - run only once on mount
+
+  // Cleanup socket connections on unmount
+  useEffect(() => {
     return () => {
       leaveAdminRoom();
       disconnectSocket();
     };
-  }, []);
+  }, []); // Separate cleanup effect
 
   useEffect(() => {
     // Close sidebar on route change (mobile)
@@ -69,7 +85,7 @@ export default function AdminLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 flex overflow-hidden">
+    <div className="h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/40 flex overflow-hidden">
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div 
@@ -81,7 +97,7 @@ export default function AdminLayout() {
 
       {/* Sidebar */}
       <aside 
-        className={`fixed top-0 left-0 h-screen w-64 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white z-50 transform transition-all duration-300 ease-out lg:translate-x-0 lg:static shadow-2xl flex flex-col ${
+        className={`fixed top-0 left-0 h-full w-64 bg-gradient-to-br from-slate-900 via-slate-900 to-indigo-950 text-white z-50 transform transition-all duration-300 ease-out lg:translate-x-0 lg:static shadow-2xl flex flex-col ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
         style={{
@@ -101,7 +117,7 @@ export default function AdminLayout() {
               <LayoutDashboard size={20} className="text-white relative z-10" />
             </div>
             <div>
-              <h1 className="text-sm font-bold tracking-tight">Community Hub</h1>
+              <h1 className="text-sm font-bold tracking-tight">KSKA</h1>
               <p className="text-[10px] text-indigo-300 font-medium">Admin Panel</p>
             </div>
           </div>
@@ -114,7 +130,7 @@ export default function AdminLayout() {
         </div>
 
         {/* Navigation */}
-        <nav className="relative flex-1 px-2 py-3 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20">
+        <nav className="relative flex-1 px-2 py-3 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent hover:scrollbar-thumb-white/20 min-h-0">
           {navItems.map((item, index) => (
             <NavLink
               key={item.to}
@@ -189,7 +205,7 @@ export default function AdminLayout() {
       </aside>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col min-w-0 lg:ml-0">
+      <div className="flex-1 flex flex-col min-w-0 lg:ml-0 h-full overflow-hidden">
         {/* Top Bar with glassmorphism */}
         <header className="relative bg-white/70 backdrop-blur-2xl shadow-sm border-b border-white/60 h-14 flex items-center justify-between px-4 lg:px-6 sticky top-0 z-30 flex-shrink-0">
           {/* Subtle gradient overlay */}
@@ -306,7 +322,7 @@ export default function AdminLayout() {
         </header>
 
         {/* Page Content with subtle animation */}
-        <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-auto">
+        <main className="flex-1 p-3 sm:p-4 lg:p-6 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-transparent hover:scrollbar-thumb-gray-400 min-h-0">
           <div className="max-w-[1600px] mx-auto" style={{ animation: 'fadeInUp 0.3s ease-out' }}>
             <Outlet />
           </div>
@@ -337,17 +353,30 @@ export default function AdminLayout() {
           animation-delay: 75ms;
         }
         .scrollbar-thin::-webkit-scrollbar {
-          width: 4px;
+          width: 6px;
+          height: 6px;
         }
         .scrollbar-thin::-webkit-scrollbar-track {
           background: transparent;
         }
         .scrollbar-thin::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.1);
+          background: rgba(156, 163, 175, 0.3);
           border-radius: 10px;
         }
         .scrollbar-thin:hover::-webkit-scrollbar-thumb {
+          background: rgba(156, 163, 175, 0.5);
+        }
+        .scrollbar-thumb-white\\/10::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.1);
+        }
+        .scrollbar-thumb-white\\/10:hover::-webkit-scrollbar-thumb {
           background: rgba(255, 255, 255, 0.2);
+        }
+        .scrollbar-thumb-gray-300::-webkit-scrollbar-thumb {
+          background: rgba(209, 213, 219, 0.5);
+        }
+        .scrollbar-thumb-gray-400:hover::-webkit-scrollbar-thumb {
+          background: rgba(156, 163, 175, 0.7);
         }
       `}</style>
     </div>

@@ -15,60 +15,21 @@ import {
 
 const router = Router();
 
-router.use(authLimiter);
+// Apply strict rate limiting only to authentication routes that need brute-force protection
+router.post('/signup', authLimiter, validate(signupSchema), authController.signup);
+router.post('/signin', authLimiter, validate(signinSchema), authController.signin);
+router.post('/send-otp', authLimiter, authController.sendSignupOtp);
+router.post('/verify-otp', authLimiter, authController.verifyOtp);
+router.post('/signin-username', authLimiter, authController.signinByUsername);
 
-/**
- * @openapi
- * /api/auth/signup:
- *   post:
- *     tags: [Auth]
- *     summary: Register a new user
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [email, username, password, fullName]
- *             properties:
- *               email: { type: string, format: email }
- *               username: { type: string, minLength: 3 }
- *               password: { type: string, minLength: 8 }
- *               fullName: { type: string }
- *     responses:
- *       201: { description: User created. Verification email sent. }
- *       400: { description: Validation error }
- *       409: { description: Email/username already exists }
- */
-router.post('/signup', validate(signupSchema), authController.signup);
-
-/**
- * @openapi
- * /api/auth/signin:
- *   post:
- *     tags: [Auth]
- *     summary: Sign in with email and password
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [email, password]
- *             properties:
- *               email: { type: string, format: email }
- *               password: { type: string }
- *     responses:
- *       200: { description: Signin successful, returns tokens }
- *       401: { description: Invalid credentials }
- */
-router.post('/signin', validate(signinSchema), authController.signin);
-router.post('/send-otp', authController.sendSignupOtp);
-router.post('/verify-otp', authController.verifyOtp);
-router.post('/signin-username', authController.signinByUsername);
+// Password reset routes with their own limiter
 router.post('/forgot-password', passwordResetLimiter, validate(forgotPasswordSchema), authController.forgotPassword);
 router.post('/reset-password', passwordResetLimiter, validate(resetPasswordSchema), authController.resetPassword);
+
+// Email verification
 router.post('/verify-email', validate(verifyEmailSchema), authController.verifyEmail);
+
+// Token refresh and logout - no strict limiting (covered by general limiter)
 router.post('/refresh-token', authController.refreshToken);
 router.post('/logout', authController.logout);
 

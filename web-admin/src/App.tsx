@@ -6,6 +6,7 @@ import DashboardPage from './pages/dashboard/DashboardPage';
 import UsersPage from './pages/users/UsersPage';
 import PostsPage from './pages/posts/PostsPage';
 import VotesPage from './pages/votes/VotesPage';
+import VoteDetailPage from './pages/votes/VoteDetailPage';
 import TicketsPage from './pages/tickets/TicketsPage';
 import MembershipsPage from './pages/memberships/MembershipsPage';
 import PaymentsPage from './pages/payments/PaymentsPage';
@@ -14,6 +15,7 @@ import LeaderboardPage from './pages/leaderboard/LeaderboardPage';
 import SettingsPage from './pages/settings/SettingsPage';
 import EmployersPage from './pages/employers/EmployersPage';
 import RefundsPage from './pages/refunds/RefundsPage';
+import ChallengesPage from './pages/challenges/ChallengesPage';
 import { useAuthStore } from './store/authStore';
 
 const queryClient = new QueryClient();
@@ -42,7 +44,9 @@ export default function App() {
             <Route path="users" element={<UsersPage />} />
             <Route path="posts" element={<PostsPage />} />
             <Route path="votes" element={<VotesPage />} />
+            <Route path="votes/:id" element={<VoteDetailPage />} />
             <Route path="tickets" element={<TicketsPage />} />
+            <Route path="challenges" element={<ChallengesPage />} />
             <Route path="memberships" element={<MembershipsPage />} />
             <Route path="payments" element={<PaymentsPage />} />
             <Route path="reports" element={<ReportsPage />} />

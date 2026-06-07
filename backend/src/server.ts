@@ -4,7 +4,6 @@ import { execSync } from 'child_process';
 import { config } from './config';
 import { initializeSocket } from './socket/socket';
 import { logger } from './utils/logger';
-import { startWorkers, closeAllQueues } from './queue';
 
 function killPortWindows(port: number) {
   try {
@@ -25,7 +24,6 @@ function startServer() {
   const httpServer = createServer(app);
 
   initializeSocket(httpServer);
-  startWorkers().catch((err) => logger.error('Worker startup failed', { message: err.message }));
 
   httpServer.listen(config.port, () => {
     logger.info(`Server running on port ${config.port} [${config.nodeEnv}]`);
@@ -53,7 +51,6 @@ startServer();
 
 async function gracefulShutdown(signal: string) {
   logger.info(`${signal} received, shutting down gracefully...`);
-  await closeAllQueues();
   process.exit(0);
 }
 

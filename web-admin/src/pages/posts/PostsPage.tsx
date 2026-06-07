@@ -60,7 +60,7 @@ export default function PostsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold text-gray-900">Posts</h1>
-          <p className="text-gray-500 mt-1">Manage all community posts</p>
+          <p className="text-gray-500 mt-1">Manage all KSKA posts</p>
         </div>
         <button
           onClick={() => setShowCreate(true)}

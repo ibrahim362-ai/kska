@@ -5,7 +5,25 @@ import { sendSuccess } from '../../utils/apiResponse';
 
 export async function createTicket(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const ticket = await ticketService.createTicket(req.user!.userId, req.body);
+    // Handle file upload - coverImage will be in req.file if uploaded
+    // Use localhost:5000 for image URLs
+    const data = {
+      ...req.body,
+      price: Number(req.body.price),
+      quantity: Number(req.body.quantity),
+      coverImage: req.file ? `http://localhost:5000/uploads/${req.file.filename}` : undefined,
+      // VIP options
+      hasVipOption: req.body.hasVipOption === 'true',
+      vipPrice: req.body.vipPrice ? Number(req.body.vipPrice) : undefined,
+      vipPoints: req.body.vipPoints ? Number(req.body.vipPoints) : 30,
+      // Family ticket
+      familyTicket: req.body.familyTicket === 'true',
+      maxFamilyMembers: req.body.maxFamilyMembers ? Number(req.body.maxFamilyMembers) : undefined,
+      // Discount and points
+      discount: req.body.discount ? Number(req.body.discount) : 0,
+      pointsReward: req.body.pointsReward ? Number(req.body.pointsReward) : 0,
+    };
+    const ticket = await ticketService.createTicket(req.user!.userId, data);
     sendSuccess({ res, statusCode: 201, message: 'Ticket created', data: ticket });
   } catch (error) {
     next(error);
@@ -32,7 +50,25 @@ export async function getTicketById(req: AuthRequest, res: Response, next: NextF
 
 export async function updateTicket(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const ticket = await ticketService.updateTicket(String(req.params.id), req.user!.userId, req.body);
+    // Handle file upload for update as well
+    // Use localhost:5000 for image URLs
+    const data = {
+      ...req.body,
+      price: req.body.price ? Number(req.body.price) : undefined,
+      quantity: req.body.quantity ? Number(req.body.quantity) : undefined,
+      coverImage: req.file ? `http://localhost:5000/uploads/${req.file.filename}` : undefined,
+      // VIP options
+      hasVipOption: req.body.hasVipOption !== undefined ? req.body.hasVipOption === 'true' : undefined,
+      vipPrice: req.body.vipPrice ? Number(req.body.vipPrice) : undefined,
+      vipPoints: req.body.vipPoints ? Number(req.body.vipPoints) : undefined,
+      // Family ticket
+      familyTicket: req.body.familyTicket !== undefined ? req.body.familyTicket === 'true' : undefined,
+      maxFamilyMembers: req.body.maxFamilyMembers ? Number(req.body.maxFamilyMembers) : undefined,
+      // Discount and points
+      discount: req.body.discount !== undefined ? Number(req.body.discount) : undefined,
+      pointsReward: req.body.pointsReward !== undefined ? Number(req.body.pointsReward) : undefined,
+    };
+    const ticket = await ticketService.updateTicket(String(req.params.id), req.user!.userId, data);
     sendSuccess({ res, message: 'Ticket updated', data: ticket });
   } catch (error) {
     next(error);
@@ -50,7 +86,31 @@ export async function deleteTicket(req: AuthRequest, res: Response, next: NextFu
 
 export async function purchaseTicket(req: AuthRequest, res: Response, next: NextFunction) {
   try {
-    const purchase = await ticketService.purchaseTicket(req.user!.userId, req.body.ticketId);
+    const { 
+      ticketId, 
+      referralCode,
+      isVip = false,
+      isGift = false,
+      recipientName,
+      recipientPhone,
+      recipientEmail,
+      familyMembers // JSON string array of family member names
+    } = req.body;
+    
+    const purchase = await ticketService.purchaseTicket(
+      req.user!.userId, 
+      ticketId, 
+      referralCode,
+      {
+        isVip,
+        isGift,
+        recipientName,
+        recipientPhone,
+        recipientEmail,
+        familyMembers
+      }
+    );
+    
     sendSuccess({ res, statusCode: 201, message: 'Ticket purchased', data: purchase });
   } catch (error) {
     next(error);

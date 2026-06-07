@@ -25,9 +25,14 @@ export async function processLeaderboardJob(job: Job<LeaderboardJobData>) {
 }
 
 export async function scheduleLeaderboardRecompute() {
-  const { leaderboardQueue } = await import('../queue');
+  const { leaderboardQueue } = await import('../queue/index.js');
+  const queue = leaderboardQueue();
+  if (!queue) {
+    logger.warn('Leaderboard queue not available');
+    return;
+  }
   // Run daily at midnight
-  await leaderboardQueue().add(
+  await queue.add(
     'recompute',
     { category: 'GENERAL', period: 'WEEKLY' },
     { repeat: { pattern: '0 0 * * *' } }

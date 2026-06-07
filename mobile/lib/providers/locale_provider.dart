@@ -10,16 +10,16 @@ const supportedLocales = [
 ];
 
 /// Locale provider with shared_preferences persistence
-final localeProvider = StateNotifierProvider<LocaleNotifier, Locale>((ref) {
-  return LocaleNotifier();
-});
+final localeProvider = NotifierProvider<LocaleNotifier, Locale>(LocaleNotifier.new);
 
-class LocaleNotifier extends StateNotifier<Locale> {
-  LocaleNotifier() : super(const Locale('en')) {
-    _load();
-  }
-
+class LocaleNotifier extends Notifier<Locale> {
   static const _key = 'app_locale';
+
+  @override
+  Locale build() {
+    _load();
+    return const Locale('en');
+  }
 
   Future<void> _load() async {
     final prefs = await SharedPreferences.getInstance();

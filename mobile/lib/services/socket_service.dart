@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:socket_io_client/socket_io_client.dart' as IO;
 import 'package:flutter/foundation.dart';
-import 'auth_provider.dart';
 
 /// Singleton socket instance
 class SocketService {
@@ -104,24 +103,7 @@ final socketServiceProvider = Provider<SocketService>((ref) {
 });
 
 /// Provider for socket connection state (boolean)
-final socketConnectedProvider = StateProvider<bool>((ref) {
+final socketConnectedProvider = Provider<bool>((ref) {
   final service = ref.watch(socketServiceProvider);
   return service.isConnected;
-});
-
-/// Auto-connect socket when user logs in, disconnect on logout
-final socketLifecycleProvider = Provider<void>((ref) {
-  final user = ref.watch(authProvider);
-  final api = ref.read(apiServiceProvider);
-  final socket = ref.read(socketServiceProvider);
-
-  if (user != null) {
-    api.dio.options.headers['Authorization']; // touch
-    // Read token from secure storage
-    // (Token is saved in signin/signup — read it)
-    // For simplicity, we just pass the userId and let socket use stored token
-    socket.connect('token-from-storage', user.id);
-  } else {
-    socket.disconnect();
-  }
 });

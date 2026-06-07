@@ -24,21 +24,42 @@ class AuthNotifier extends Notifier<Map<String, dynamic>?> {
 
   Future<String?> login(String username, String password) async {
     try {
+      print('[AUTH] Attempting login for username: $username');
       final res = await api.dio.post('/auth/signin-username', data: {'username': username, 'password': password});
+      print('[AUTH] Login response received: ${res.statusCode}');
+      
       final data = res.data['data'];
+      print('[AUTH] Saving tokens...');
       await api.saveTokens(data['accessToken'], data['refreshToken']);
+      
+      print('[AUTH] Setting user state...');
       state = data['user'];
 
       // Connect socket
-      socket.connect(data['accessToken'], data['user']['id']);
+      print('[AUTH] Connecting socket...');
+      try {
+        socket.connect(data['accessToken'], data['user']['id']);
+      } catch (e) {
+        print('[AUTH WARNING] Socket connection failed: $e');
+      }
 
-      // Init notifications
-      await notif.initialize();
-      await notif.registerTokenWithBackend(api);
+      // Init notifications - skip if fails (not critical)
+      print('[AUTH] Initializing notifications...');
+      try {
+        await notif.initialize();
+        await notif.registerTokenWithBackend(api);
+      } catch (e) {
+        print('[AUTH WARNING] Notification setup failed (non-critical): $e');
+      }
 
+      print('[AUTH] Login successful!');
       return null;
     } catch (e) {
-      return 'Login failed. Check credentials.';
+      print('[AUTH ERROR] Login failed: $e');
+      if (e.toString().contains('DioException')) {
+        return 'Network error. Check your connection.';
+      }
+      return 'Login failed: ${e.toString()}';
     }
   }
 

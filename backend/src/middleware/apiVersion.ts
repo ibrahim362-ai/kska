@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 
 const API_VERSION = '1.0.0';
-const API_NAME = 'community-hub-api';
+const API_NAME = 'kska-api';
 
 /**
  * Add API version headers to every response.

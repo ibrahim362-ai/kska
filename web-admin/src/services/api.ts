@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: 'http://localhost:5000/api',
   headers: { 'Content-Type': 'application/json' },
 });
 
@@ -21,7 +21,7 @@ api.interceptors.response.use(
       if (refreshToken && !error.config._retry) {
         error.config._retry = true;
         try {
-          const { data } = await axios.post('/api/auth/refresh-token', { refreshToken });
+          const { data } = await axios.post('http://localhost:5000/api/auth/refresh-token', { refreshToken });
           localStorage.setItem('accessToken', data.data.accessToken);
           localStorage.setItem('refreshToken', data.data.refreshToken);
           error.config.headers.Authorization = `Bearer ${data.data.accessToken}`;

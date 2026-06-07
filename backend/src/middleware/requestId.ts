@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 declare module 'express-serve-static-core' {
   interface Request {
@@ -14,7 +14,7 @@ declare module 'express-serve-static-core' {
  */
 export function requestId(req: Request, res: Response, next: NextFunction) {
   const incoming = req.headers['x-request-id'] as string | undefined;
-  const id = incoming && /^[a-zA-Z0-9_-]{1,128}$/.test(incoming) ? incoming : uuidv4();
+  const id = incoming && /^[a-zA-Z0-9_-]{1,128}$/.test(incoming) ? incoming : randomUUID();
   req.id = id;
   res.setHeader('X-Request-Id', id);
   next();
