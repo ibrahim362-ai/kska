@@ -81,3 +81,16 @@ docker-compose.override.yml
 *.orig
 *.rej
 .history/
+
+# ---------- Temporary docs & status files ----------
+*_STATUS.md
+*_COMPLETE.md
+*_FIX.md
+*_FEATURE.md
+ANNOUNCEMENT_*.md
+GABAASA_*.md
+temp_*.txt
+flutter_reload.txt
+test-*.ts
+test-*.js
+make-*.ts
