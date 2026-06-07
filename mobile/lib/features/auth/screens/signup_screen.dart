@@ -104,19 +104,23 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       );
       
       if (mounted) {
-        // Show OTP code for testing (development only)
-        final otpCode = response.data['data']?['code'];
-        if (otpCode != null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Development Mode - OTP Code: $otpCode'),
-              duration: const Duration(seconds: 10),
-              backgroundColor: Colors.green,
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Expanded(
+                  child: Text('Verification code sent to your email!'),
+                ),
+              ],
             ),
-          );
-          // Auto-fill for testing
-          _otpCtrl.text = otpCode.toString();
-        }
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            duration: const Duration(seconds: 4),
+          ),
+        );
         setState(() => _step = 1);
       }
     } catch (e) {
