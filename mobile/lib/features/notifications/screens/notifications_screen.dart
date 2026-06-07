@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../providers/auth_provider.dart';
 import '../../../models/models.dart';
 import '../../../services/socket_service.dart';
+import '../../../services/notification_service.dart';
 
 class NotificationsScreen extends ConsumerStatefulWidget {
   const NotificationsScreen({super.key});
@@ -22,12 +23,39 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
   void initState() {
     super.initState();
     _fetch();
+    _listenToRealTimeNotifications();
+  }
 
-    // Listen for new notifications in real-time
+  void _listenToRealTimeNotifications() {
+    // Listen for new notifications in real-time via socket
     final socket = ref.read(socketServiceProvider);
     socket.onNotificationNew((data) {
       if (mounted) {
-        _fetch(); // Refresh on new notification
+        // Add new notification to the top of the list
+        final newNotif = NotificationModel.fromJson(data);
+        setState(() {
+          _notifications.insert(0, newNotif);
+        });
+        
+        // Show local notification
+        notificationService.showLocal(
+          title: newNotif.title,
+          body: newNotif.message,
+        );
+      }
+    });
+
+    // Listen for foreground Firebase messages
+    notificationService.onMessage.listen((message) {
+      if (mounted && message.notification != null) {
+        // Refresh notifications list
+        _fetch();
+        
+        // Show local notification
+        notificationService.showLocal(
+          title: message.notification!.title ?? 'New Notification',
+          body: message.notification!.body ?? '',
+        );
       }
     });
   }

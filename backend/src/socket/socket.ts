@@ -1,5 +1,6 @@
 import { Server as HttpServer } from 'http';
 import { Server, Socket } from 'socket.io';
+import app from '../app';
 
 let io: Server;
 
@@ -10,6 +11,9 @@ export function initializeSocket(httpServer: HttpServer) {
       methods: ['GET', 'POST'],
     },
   });
+
+  // Store io instance in app for controllers to access
+  app.set('io', io);
 
   io.on('connection', (socket: Socket) => {
     console.log(`[Socket] User connected: ${socket.id}`);
@@ -24,6 +28,7 @@ export function initializeSocket(httpServer: HttpServer) {
 
     socket.on('join:user', (userId: string) => {
       socket.join(`user:${userId}`);
+      console.log(`[Socket] User ${userId} joined room: user:${userId}`);
     });
 
     socket.on('disconnect', () => {

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../../providers/auth_provider.dart';
+import '../../../services/socket_service.dart';
 
 class MyTicketsScreen extends ConsumerStatefulWidget {
   const MyTicketsScreen({super.key});
@@ -18,6 +19,85 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
   void initState() {
     super.initState();
     _fetch();
+    _listenToPaymentUpdates();
+  }
+
+  void _listenToPaymentUpdates() {
+    // Listen for payment status updates via socket
+    final socket = ref.read(socketServiceProvider);
+    
+    // Listen for payment approval
+    socket.socket?.on('payment:approved', (data) {
+      if (mounted) {
+        _updatePurchaseStatus(data['purchaseId'], 'PAID');
+        _showPaymentNotification('Payment Approved! ✅', 'Your ticket is now active.');
+      }
+    });
+    
+    // Listen for payment rejection
+    socket.socket?.on('payment:rejected', (data) {
+      if (mounted) {
+        _updatePurchaseStatus(data['purchaseId'], 'CANCELLED');
+        _showPaymentNotification('Payment Rejected ❌', data['reason'] ?? 'Please try again.');
+      }
+    });
+  }
+
+  void _updatePurchaseStatus(String purchaseId, String newStatus) {
+    setState(() {
+      final index = _purchases.indexWhere((p) => p['id'] == purchaseId);
+      if (index != -1) {
+        _purchases[index]['status'] = newStatus;
+      }
+    });
+  }
+
+  void _showPaymentNotification(String title, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(
+              title.contains('Approved') ? Icons.check_circle : Icons.error,
+              color: Colors.white,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                    ),
+                  ),
+                  Text(message),
+                ],
+              ),
+            ),
+          ],
+        ),
+        backgroundColor: title.contains('Approved') ? Colors.green : Colors.red,
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 5),
+        action: SnackBarAction(
+          label: 'View',
+          textColor: Colors.white,
+          onPressed: () => _fetch(),
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    final socket = ref.read(socketServiceProvider);
+    socket.socket?.off('payment:approved');
+    socket.socket?.off('payment:rejected');
+    super.dispose();
   }
 
   Future<void> _fetch() async {
@@ -65,127 +145,204 @@ class _MyTicketsScreenState extends ConsumerState<MyTicketsScreen> {
       'CANCELLED': Colors.red,
       'REFUNDED': Colors.purple,
     };
+    
+    final stIcons = {
+      'PAID': Icons.check_circle,
+      'PENDING': Icons.hourglass_empty,
+      'USED': Icons.qr_code_scanner,
+      'CANCELLED': Icons.cancel,
+      'REFUNDED': Icons.refresh,
+    };
 
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      elevation: status == 'PENDING' ? 8 : 2,
       child: InkWell(
         onTap: () => _showDetail(context, p),
         borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: status == 'PENDING' 
+                ? Border.all(color: Colors.orange, width: 2)
+                : null,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
                       ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: (stColors[status] ?? Colors.grey).withValues(
+                          alpha: 0.15,
+                        ),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: stColors[status] ?? Colors.grey,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            stIcons[status] ?? Icons.info,
+                            size: 14,
+                            color: stColors[status],
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            status,
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: stColors[status],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                
+                // Pending status message
+                if (status == 'PENDING') ...[
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.orange.shade200),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(Icons.info_outline, color: Colors.orange.shade700, size: 20),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Payment Under Review',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange.shade900,
+                                  fontSize: 13,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Admin is reviewing your payment. You\'ll be notified soon.',
+                                style: TextStyle(
+                                  color: Colors.orange.shade700,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: (stColors[status] ?? Colors.grey).withValues(
-                        alpha: 0.1,
+                ],
+                
+                if (seat != null && status == 'PAID') ...[
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      const Icon(Icons.event_seat, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Seat: $seat',
+                        style: TextStyle(color: Colors.grey.shade600),
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Text(
-                      status,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w600,
-                        color: stColors[status],
+                    ],
+                  ),
+                ],
+                
+                // Referral Code Display (only for PAID tickets)
+                if (p['referralCode'] != null && status == 'PAID') ...[
+                  const SizedBox(height: 8),
+                  GestureDetector(
+                    onTap: () {
+                      Clipboard.setData(ClipboardData(text: p['referralCode']));
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Referral code copied!')),
+                      );
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Theme.of(context).primaryColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: Theme.of(context).primaryColor.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.card_giftcard, size: 16, color: Theme.of(context).primaryColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Code: ${p['referralCode']}',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: Theme.of(context).primaryColor,
+                            ),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(Icons.copy, size: 14, color: Theme.of(context).primaryColor),
+                        ],
                       ),
                     ),
                   ),
                 ],
-              ),
-              if (seat != null) ...[
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    const Icon(Icons.event_seat, size: 16, color: Colors.grey),
-                    const SizedBox(width: 4),
-                    Text(
-                      'Seat: $seat',
-                      style: TextStyle(color: Colors.grey.shade600),
-                    ),
-                  ],
-                ),
-              ],
-              // Referral Code Display
-              if (p['referralCode'] != null) ...[
-                const SizedBox(height: 8),
-                GestureDetector(
-                  onTap: () {
-                    Clipboard.setData(ClipboardData(text: p['referralCode']));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Referral code copied!')),
-                    );
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).primaryColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: Theme.of(context).primaryColor.withOpacity(0.3),
+                
+                if (qrCode != null && status == 'PAID') ...[
+                  const SizedBox(height: 12),
+                  Center(
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: QrImageView(
+                        data: qrCode,
+                        version: QrVersions.auto,
+                        size: 150,
+                        padding: const EdgeInsets.all(8),
                       ),
                     ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.card_giftcard, size: 16, color: Theme.of(context).primaryColor),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Code: ${p['referralCode']}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w700,
-                            color: Theme.of(context).primaryColor,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Icon(Icons.copy, size: 14, color: Theme.of(context).primaryColor),
-                      ],
-                    ),
                   ),
+                ],
+                const SizedBox(height: 6),
+                Text(
+                  'Tap for details',
+                  style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
                 ),
               ],
-              if (qrCode != null) ...[
-                const SizedBox(height: 12),
-                Center(
-                  child: Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.grey.shade200),
-                    ),
-                    child: QrImageView(
-                      data: qrCode,
-                      version: QrVersions.auto,
-                      size: 150,
-                      padding: const EdgeInsets.all(8),
-                    ),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 6),
-              Text(
-                'Tap for details',
-                style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
-              ),
-            ],
+            ),
           ),
         ),
       ),

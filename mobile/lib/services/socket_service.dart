@@ -10,6 +10,7 @@ class SocketService {
 
   bool get isConnected => _connected;
   String? get userId => _userId;
+  IO.Socket? get socket => _socket; // Expose socket for direct access
 
   void connect(String token, String userId) {
     if (_connected && _userId == userId) return;

@@ -77,11 +77,15 @@ export async function submitProof(req: AuthRequest, res: Response, next: NextFun
  */
 export async function reviewProof(req: AuthRequest, res: Response, next: NextFunction) {
   try {
+    // Get socket.io instance from app
+    const io = req.app.get('io');
+    
     const result = await manualPaymentService.reviewManualProof({
       proofId: String(req.params.proofId),
       reviewerId: req.user!.userId,
       decision: req.body.decision,
       rejectionReason: req.body.rejectionReason,
+      io: io, // Pass socket instance
     });
 
     // Notify user via email

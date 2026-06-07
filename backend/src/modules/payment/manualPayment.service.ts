@@ -79,6 +79,7 @@ export async function reviewManualProof(opts: {
   reviewerId: string;
   decision: 'APPROVED' | 'REJECTED';
   rejectionReason?: string;
+  io?: any; // Socket.io instance
 }) {
   const proof = await prisma.manualPaymentProof.findUnique({
     where: { id: opts.proofId },
@@ -122,6 +123,31 @@ export async function reviewManualProof(opts: {
 
     return { proof: updatedProof, payment: updatedPayment };
   });
+
+  // Emit real-time socket events to user
+  if (opts.io) {
+    const eventName = opts.decision === 'APPROVED' ? 'payment:approved' : 'payment:rejected';
+    const notificationData = {
+      purchaseId: proof.payment.ticketPurchaseId,
+      paymentId: proof.payment.id,
+      status: opts.decision,
+      reason: opts.rejectionReason,
+    };
+    
+    // Emit to specific user room
+    opts.io.to(`user:${proof.userId}`).emit(eventName, notificationData);
+    
+    // Also emit general notification event
+    opts.io.to(`user:${proof.userId}`).emit('notification:new', {
+      type: opts.decision === 'APPROVED' ? 'PAYMENT_APPROVED' : 'PAYMENT_REJECTED',
+      title: opts.decision === 'APPROVED' ? 'Payment Approved! ✅' : 'Payment Rejected ❌',
+      message: opts.decision === 'APPROVED' 
+        ? 'Your payment has been approved. Your ticket/membership is now active!'
+        : `Payment rejected: ${opts.rejectionReason}`,
+      createdAt: new Date(),
+      isRead: false,
+    });
+  }
 
   logger.info('Manual payment proof reviewed', {
     proofId: opts.proofId,
